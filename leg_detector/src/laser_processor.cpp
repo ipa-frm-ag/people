@@ -44,6 +44,13 @@ using namespace ros;
 using namespace std;
 using namespace laser_processor;
 
+bool sample_x_comp(Sample* i, Sample* j) {
+    return i->x < j->x;
+}
+bool sample_y_comp(Sample* i, Sample* j) {
+    return i->y < j->y;
+}
+
 Sample* Sample::Extract(int ind, const sensor_msgs::LaserScan& scan)
 {
   Sample* s = new Sample();
@@ -101,7 +108,7 @@ void SampleSet::saveAsSVG(const char * file){
     {
         myfile << "<?xml version='1.0' standalone='no'?>" << endl;
         myfile << "<!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>" << endl;
-        myfile << "<svg width='12cm' height='12cm' viewBox='-3 -3 6 6' xmlns='http://www.w3.org/2000/svg' version='1.1'>" << endl;
+        myfile << "<svg width='12cm' height='12cm' viewBox='" << this->getMinXValue() << " " << this->getMinYValue() << " " << this->getMaxXValue()-this->getMinXValue() << " " << this->getMaxYValue()-this->getMinYValue() << "' xmlns='http://www.w3.org/2000/svg' version='1.1'>" << endl;
         myfile << "<desc>Example circle01 - circle filled with red and stroked with blue</desc>" << endl;
 
         myfile << "<!-- Show outline of canvas using 'rect' element -->" << endl;
@@ -112,7 +119,7 @@ void SampleSet::saveAsSVG(const char * file){
              sample_iter != end();
              sample_iter++)
         {
-            myfile << "<circle cx='"<< (*sample_iter)->x << "' cy='"<< (*sample_iter)->y <<"' r='0.02' fill='red' stroke='blue' stroke-width='0.005'  />" << endl;
+            myfile << "<circle cx='"<< (*sample_iter)->x << "' cy='"<< (*sample_iter)->y <<"' r='0.002' fill='red' stroke='blue' stroke-width='0.001'  />" << endl;
         }
         myfile << "</svg>" << endl;
         myfile.close();
@@ -136,6 +143,18 @@ tf::Point SampleSet::center()
   return tf::Point(x_mean, y_mean, 0.0);
 }
 
+float SampleSet::getMinXValue(){
+    return (*std::min_element(this->begin(), this->end(),sample_x_comp))->x;
+}
+float SampleSet::getMaxXValue(){
+    return (*std::max_element(this->begin(), this->end(),sample_x_comp))->x;
+}
+float SampleSet::getMinYValue(){
+    return (*std::min_element(this->begin(), this->end(),sample_y_comp))->y;
+}
+float SampleSet::getMaxYValue(){
+    return (*std::max_element(this->begin(), this->end(),sample_y_comp))->y;
+}
 
 void ScanMask::addScan(sensor_msgs::LaserScan& scan)
 {
