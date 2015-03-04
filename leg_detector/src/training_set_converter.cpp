@@ -41,6 +41,7 @@
 #include <boost/program_options.hpp>
 #include <boost/regex.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <leg_detector/ClusterMsg.h>
 #include <leg_detector/LabeledRangeScanMsg.h>
@@ -143,16 +144,16 @@ void TrainingSetConverter::convertTrainingSet(const char* file) {
 
             if(pLabeledRangeScanMsg->clusters.size() > 0){ //If there are clusters
 
-
                 cout << endl;
                 //cout << RED << pLabeledRangeScanMsg->header.stamp <<  "RangeScan" << RESET << endl;
 
-
+                int counter = 0;
                 for(leg_detector::LabeledRangeScanMsg::_clusters_type::iterator clusterIt = pLabeledRangeScanMsg->clusters.begin(); clusterIt != pLabeledRangeScanMsg->clusters.end(); clusterIt++){
                     SampleSet* pCluster = new SampleSet();
                     cout << GREEN << pLaserScan->header.stamp << RESET << endl;
                     cout << "\tLabel:[" << clusterIt->label << "] " << endl;
                     pCluster->label = clusterIt->label;
+                    pCluster->id_ = counter;
 
                     for(leg_detector::ClusterMsg::_indices_type::iterator indexIt = clusterIt->indices.begin(); indexIt != clusterIt->indices.end(); indexIt++){
                         int16_t index = ((int16_t)(*indexIt));
@@ -165,7 +166,18 @@ void TrainingSetConverter::convertTrainingSet(const char* file) {
                     }
 
                     clusterList.push_back(pCluster);
-                    pCluster->saveAsSVG((pCluster->label.append(".svg")).c_str());
+                    std::string time_str = boost::lexical_cast<std::string>(pLaserScan->header.stamp.sec)  + "_" + boost::lexical_cast<std::string>(pLaserScan->header.stamp.nsec);
+                    boost::filesystem::path legPath ( "./LEG/" );
+                    boost::filesystem::create_directories( legPath);
+                    boost::filesystem::path nolegPath ( "./NOLEG/" );
+                                        boost::filesystem::create_directories( nolegPath);
+
+                    if(pCluster->label == "LEG")
+                        pCluster->saveAsSVG(("./LEG/" + time_str + "_" + boost::lexical_cast<std::string>(pCluster->id_) + pCluster->label.append(".svg")).c_str());
+                    if(pCluster->label == "NOLEG")
+                        pCluster->saveAsSVG(("./NOLEG/" + time_str + "_" + boost::lexical_cast<std::string>(pCluster->id_) + pCluster->label.append(".svg")).c_str());
+
+                    counter++;
                 }
 
                 labeledScanList.push_back(new LabeledScanData(pLaserScan,pLabeledRangeScanMsg));
@@ -218,7 +230,7 @@ int main(int argc, char **argv) {
     }
 
     if (vm.count("output-file")) {
-        cout << "Input files are: " << vm["input-file"].as<std::string>()
+        cout << "Output files are: " << vm["output-file"].as<std::string>()
                 << "\n";
     }
 

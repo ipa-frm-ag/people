@@ -107,6 +107,11 @@ public:
 
   void appendToCloud(sensor_msgs::PointCloud& cloud, int r = 0, int g = 0, int b = 0);
 
+  float getMinXValue();
+  float getMaxXValue();
+  float getMinYValue();
+  float getMaxYValue();
+
   tf::Point center();
 
   void saveAsSVG(const char* file);

@@ -89,13 +89,6 @@ namespace po = boost::program_options;
 int g_argc;
 char** g_argv;
 
-bool sample_x_comp(laser_processor::Sample* i, laser_processor::Sample* j) {
-    return i->x < j->x;
-}
-bool sample_y_comp(laser_processor::Sample* i, laser_processor::Sample* j) {
-    return i->y < j->y;
-}
-
 /** Mapping time -> list<SampleSet*>* (Pointer to a list of pointers to SampleSets(Clusters)) */
 typedef std::map<ros::Time, list<SampleSet*>*> timeSampleSetMap;
 typedef std::map<ros::Time, list<SampleSet*>*>::iterator timeSampleSetMapIt;
@@ -476,14 +469,6 @@ public:
 
     visualization_msgs::Marker getRectangleMarkerForCluster(SampleSet* cluster,
             int id, float r = 0, float g = 0, float b = 0) {
-        float x_min_value = (*std::min_element(cluster->begin(), cluster->end(),
-                sample_x_comp))->x;
-        float x_max_value = (*std::max_element(cluster->begin(), cluster->end(),
-                sample_x_comp))->x;
-        float y_min_value = (*std::min_element(cluster->begin(), cluster->end(),
-                sample_y_comp))->y;
-        float y_max_value = (*std::max_element(cluster->begin(), cluster->end(),
-                sample_y_comp))->y;
 
         //  ^
         //  |    p0 ------------- p1
@@ -492,22 +477,22 @@ public:
         //    x----->
 
         geometry_msgs::Point p0;
-        p0.x = (double) x_min_value;
-        p0.y = (double) y_max_value;
+        p0.x = (double) cluster->getMinXValue();
+        p0.y = (double) cluster->getMaxYValue();
         p0.z = (double) 0;
         geometry_msgs::Point p1;
-        p1.x = (double) x_max_value;
-        p1.y = (double) y_max_value;
+        p1.x = (double) cluster->getMaxXValue();
+        p1.y = (double) cluster->getMaxYValue();
         p1.z = (double) 0;
 
         geometry_msgs::Point p2;
-        p2.x = (double) x_max_value;
-        p2.y = (double) y_min_value;
+        p2.x = (double) cluster->getMaxXValue();
+        p2.y = (double) cluster->getMinYValue();
         p2.z = (double) 0;
 
         geometry_msgs::Point p3;
-        p3.x = (double) x_min_value;
-        p3.y = (double) y_min_value;
+        p3.x = (double) cluster->getMinXValue();
+        p3.y = (double) cluster->getMinYValue();
         p3.z = (double) 0;
 
         visualization_msgs::Marker rectangle;
