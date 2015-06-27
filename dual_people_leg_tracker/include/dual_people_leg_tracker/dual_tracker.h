@@ -8,6 +8,8 @@
 #ifndef DUAL_TRACKER_H_
 #define DUAL_TRACKER_H_
 
+#undef NDEBUG
+
 // ROS includes
 #include <ros/ros.h>
 #include <dynamic_reconfigure/server.h>

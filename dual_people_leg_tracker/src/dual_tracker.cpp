@@ -76,6 +76,9 @@
 #include <people_tracking_filter/rgb.h>
 #include <dual_people_leg_tracker/models/occlusion_model.h>
 
+// MHT
+#include <dual_people_leg_tracker/mht/Hypothesis.h>
+
 // Configuration
 #include <dynamic_reconfigure/server.h>
 
@@ -170,6 +173,11 @@ public:
 
   bool use_seeds_;
 
+  // MHT Stuff
+  bool firstRun;
+  HypothesisPtr rootHypothesis;
+
+
   //GlobalConfig* globalConfig;
 
   bool publish_leg_measurements_;
@@ -247,7 +255,8 @@ public:
     laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
     cycle_(0),
     occlusionModel_(new OcclusionModel(tfl_)),
-    new_track_creation_likelihood_(0.5)
+    new_track_creation_likelihood_(0.5),
+	firstRun(true)
   {
     if (g_argc > 1)
     {
@@ -589,6 +598,25 @@ public:
 
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
 
+
+    //////////////////////////////////////////////////////////////////////////
+    //// MHT
+    //////////////////////////////////////////////////////////////////////////
+
+    if(firstRun){
+    	rootHypothesis = HypothesisPtr(new Hypothesis());
+    	rootHypothesis->assignMeasurements(detections);
+    	rootHypothesis->createCostMatrix();
+    	rootHypothesis->solveCostMatrix();
+    }
+    else
+    {
+
+    }
+
+    firstRun = false;
+
+    ROS_ASSERT(false);
     //////////////////////////////////////////////////////////////////////////
     //// Joint Probability Data Association
     //////////////////////////////////////////////////////////////////////////
@@ -2521,7 +2549,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
 int main(int argc, char **argv)
 {
-  // Boost generator
+/*  // Boost generator
   typedef boost::mt19937 RNGType;
   RNGType rng;
   boost::uniform_int<> dist( 0, 9999);
@@ -2586,7 +2614,7 @@ int main(int argc, char **argv)
   possibleAssignments.resize(5,2);
   possibleAssignments = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(5,2);
 
-  possibleAssignments.col(0).setZero();
+  possibleAssignments.col(0).setZero();*/
 
 
   ros::init(argc, argv, "dual_tracker");
