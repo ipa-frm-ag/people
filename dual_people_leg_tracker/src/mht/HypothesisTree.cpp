@@ -23,3 +23,15 @@ HypothesisTree::~HypothesisTree() {
 void HypothesisTree::setRootHypothesis(HypothesisPtr rootHypothesis){
 	this->rootHypothesis_ = rootHypothesis;
 }
+
+void HypothesisTree::addHypothesis(HypothesisPtr hypothesis){
+
+	// Get the cycle
+	int cycle = hypothesis->getCycle();
+
+	// TODO Check if this really works
+	this->hypothesis[cycle].push_back(hypothesis);
+
+	std::cout << " Hypothesis from cycle " << cycle << " was added to the tree" << std::endl;
+
+}

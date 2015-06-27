@@ -27,7 +27,8 @@ Hypothesis::Hypothesis(int cycle, HypothesisTreePtr globalHypothesisTree):
 	occlusionCostValue_(120),
 	invalidValue_(-1000),
 	probability_(1.0),
-	cycle_(cycle)
+	cycle_(cycle),
+	globalHypothesisTree_(globalHypothesisTree)
 {
 	std::cout << "New Hypothesis create for cycle " << cycle << std::endl;
 }
@@ -123,7 +124,7 @@ bool Hypothesis::solveCostMatrix(){
 
 
     // TODO depend this on the number of measurements
-    int k = 1;
+    int k = 2;
     solutions = murty(-costMatrix,k);
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
@@ -362,7 +363,7 @@ bool Hypothesis::createChildren(){
 		if(childProbs[i]/maxProb > 0.1){
 
 			// Create child
-			HypothesisPtr childHypothesis(new Hypothesis(cycle_+1, this->globalHypothesisTree));
+			HypothesisPtr childHypothesis(new Hypothesis(cycle_+1, this->globalHypothesisTree_));
 			childHypothesis->setParent(shared_from_this());
 
 			// Create the new Tracks
@@ -374,10 +375,11 @@ bool Hypothesis::createChildren(){
 				childHypothesis->addTrack(newTrack);
 			}
 
+			ROS_ASSERT(this->globalHypothesisTree_); // ASSERT that this is set
+
 			// Add this to the children
 			this->children.push_back(childHypothesis);
-
-
+			this->globalHypothesisTree_->addHypothesis(childHypothesis);
 
 		}
 

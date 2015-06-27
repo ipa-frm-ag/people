@@ -126,3 +126,12 @@ target_link_libraries(dual_tracker dual_people_leg_tracker ${catkin_LIBRARIES} $
 
 #target_link_libraries(murty_demo hungarian)
 
+## The leg detector
+add_executable(KalmanFilterDemo
+                  src/mht/KalmanFilterDemo.cpp
+                  src/mht/KalmanFilter.cpp 
+               )
+#add_dependencies(KalmanFilterDemo people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})               
+
+#target_link_libraries(KalmanFilterDemo dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES})
+

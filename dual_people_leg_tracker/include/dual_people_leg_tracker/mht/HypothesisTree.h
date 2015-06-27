@@ -20,12 +20,17 @@ public:
 	// The root of this tree
 	HypothesisPtr rootHypothesis_;
 
+	std::map<int, std::vector<HypothesisPtr> > hypothesis;
+
 public:
 	HypothesisTree();
 	virtual ~HypothesisTree();
 
 	// Set the root hypothesis
 	void setRootHypothesis(HypothesisPtr rootHypothesis);
+
+	// Add Hypothesis to handle
+	void addHypothesis(HypothesisPtr hypothesis);
 };
 
 

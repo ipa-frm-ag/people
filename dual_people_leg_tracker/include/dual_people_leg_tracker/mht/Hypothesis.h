@@ -57,7 +57,7 @@ private:
 
     std::vector<TrackPtr> tracks_;
 
-    HypothesisTreePtr globalHypothesisTree;
+    HypothesisTreePtr globalHypothesisTree_;
 
 //	extern static enum LABEL{
 //	    OCCLUDED,
@@ -113,6 +113,11 @@ public:
 
 	// Add a track to this hypothesis
 	void addTrack(TrackPtr track);
+
+	// Get the cycle
+	const int getCycle(){
+		return this->cycle_;
+	}
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_HYPOTHESIS_H_ */
