@@ -16,7 +16,7 @@
 
 
 // Murty Algorithm, basic header only implementation
-void color_print_solution(Eigen::Matrix<int, -1, -1> costMatrix, Eigen::Matrix<int, -1, -1> solution) {
+inline void color_print_solution(Eigen::Matrix<int, -1, -1> costMatrix, Eigen::Matrix<int, -1, -1> solution) {
   int i,j;
   fprintf(stderr , "\n");
   for(i=0; i<costMatrix.rows(); i++) {
@@ -32,7 +32,7 @@ void color_print_solution(Eigen::Matrix<int, -1, -1> costMatrix, Eigen::Matrix<i
   }
 }
 
-int** eigenmatrix_to_cmatrix(Eigen::Matrix<int, -1, -1> m, int rows, int cols) {
+inline int** eigenmatrix_to_cmatrix(Eigen::Matrix<int, -1, -1> m, int rows, int cols) {
   int i,j;
   int** r;
   r = (int**)calloc(rows,sizeof(int*));
@@ -45,7 +45,7 @@ int** eigenmatrix_to_cmatrix(Eigen::Matrix<int, -1, -1> m, int rows, int cols) {
   return r;
 }
 
-Eigen::Matrix<int, -1, -1> cmatrix_to_eigenmatrix(int** C, int rows, int cols) {
+inline Eigen::Matrix<int, -1, -1> cmatrix_to_eigenmatrix(int** C, int rows, int cols) {
 
   Eigen::Matrix<int, -1, -1> result;
   result = Eigen::Matrix<int, -1, -1>::Zero(rows,cols);
@@ -76,7 +76,7 @@ class SolutionProblemPair {
     Solution solution;
 };
 
-Solution solvehungarian(Eigen::Matrix<int, -1, -1> problem){
+inline Solution solvehungarian(Eigen::Matrix<int, -1, -1> problem){
 
     Solution solution;
 
@@ -106,7 +106,7 @@ Solution solvehungarian(Eigen::Matrix<int, -1, -1> problem){
     return solution;
 }
 
-bool sortPairs (SolutionProblemPair i, SolutionProblemPair j) {
+inline bool sortPairs (SolutionProblemPair i, SolutionProblemPair j) {
   // PARTITIONED ALWAYS BEFORE UNPARTITIONED
   if(i.state == PARTITIONED && j.state == UNPARTITIONED)
     return true;
@@ -118,7 +118,7 @@ bool sortPairs (SolutionProblemPair i, SolutionProblemPair j) {
 
 
 //// Printer the Answer List
-void printAnswerList(std::vector<SolutionProblemPair> AnswerList){
+inline void printAnswerList(std::vector<SolutionProblemPair> AnswerList){
 
   std::cout << "AnswerList is now:" << std::endl;
   for(std::vector<SolutionProblemPair>::iterator sppIt = AnswerList.begin();
@@ -133,7 +133,7 @@ void printAnswerList(std::vector<SolutionProblemPair> AnswerList){
   }
 }
 
-std::vector<Solution> murty(Eigen::Matrix<int, -1, -1> costMat, int nBest){
+inline std::vector<Solution> murty(Eigen::Matrix<int, -1, -1> costMat, int nBest){
 
   // Initialize needed lists
   std::vector<SolutionProblemPair> AnswerList;

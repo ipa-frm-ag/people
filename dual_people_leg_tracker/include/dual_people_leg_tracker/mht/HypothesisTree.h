@@ -1,0 +1,30 @@
+#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_HYPOTHESISTREE_H_
+#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_HYPOTHESISTREE_H_
+
+// Boost includes
+#include <boost/shared_ptr.hpp>
+
+// Own includes
+#include <dual_people_leg_tracker/mht/Hypothesis.h>
+
+namespace mht{
+
+class HypothesisTree; // Forward declaration
+
+typedef boost::shared_ptr<HypothesisTree> HypothesisTreePtr;
+
+class HypothesisTree {
+public:
+	// The root of this tree
+	HypothesisPtr rootHypothesis_;
+
+public:
+	HypothesisTree();
+	virtual ~HypothesisTree();
+
+	// Set the root hypothesis
+	void setRootHypothesis(HypothesisPtr rootHypothesis);
+};
+
+}
+#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_HYPOTHESISTREE_H_ */

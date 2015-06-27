@@ -78,6 +78,7 @@
 
 // MHT
 #include <dual_people_leg_tracker/mht/Hypothesis.h>
+#include <dual_people_leg_tracker/mht/HypothesisTree.h>
 
 // Configuration
 #include <dynamic_reconfigure/server.h>
@@ -175,7 +176,8 @@ public:
 
   // MHT Stuff
   bool firstRun;
-  HypothesisPtr rootHypothesis;
+  //HypothesisPtr rootHypothesis;
+  mht::HypothesisTreePtr hypothesisTree_;
 
 
   //GlobalConfig* globalConfig;
@@ -256,7 +258,8 @@ public:
     cycle_(0),
     occlusionModel_(new OcclusionModel(tfl_)),
     new_track_creation_likelihood_(0.5),
-	firstRun(true)
+	firstRun(true),
+	hypothesisTree_(new mht::HypothesisTree())
   {
     if (g_argc > 1)
     {
@@ -602,20 +605,33 @@ public:
     //////////////////////////////////////////////////////////////////////////
     //// MHT
     //////////////////////////////////////////////////////////////////////////
+    ROS_DEBUG("%sMHT [Cycle %u]", BOLDWHITE, cycle_);
+    benchmarking::Timer mhtTimer;
 
     if(firstRun){
-    	rootHypothesis = HypothesisPtr(new Hypothesis());
+    	HypothesisPtr rootHypothesis = HypothesisPtr(new Hypothesis(-1));
+    	mhtTimer.start();
     	rootHypothesis->assignMeasurements(detections);
     	rootHypothesis->createCostMatrix();
     	rootHypothesis->solveCostMatrix();
+    	rootHypothesis->stdCoutSolutions();
+
+    	rootHypothesis->createChildren();
+
+    	hypothesisTree_->setRootHypothesis(rootHypothesis);
     }
     else
     {
 
     }
 
-    firstRun = false;
+    mhtTimer.stop();
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - MHT",__func__);
+    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"DualTracker::%s - MHT took %f ms",__func__, mhtTimer.getElapsedTimeMs());
+    //ROS_DEBUG("%MHT Done! [Cycle %u]", BOLDWHITE, cycle_);
+    std::cout << "Foo123" << std::endl;
 
+    firstRun = false;
     ROS_ASSERT(false);
     //////////////////////////////////////////////////////////////////////////
     //// Joint Probability Data Association
@@ -1327,10 +1343,8 @@ public:
     freeTimer.start();
  }
 
-  /**
-   * Publish a list of pointers to legFeatures
-   * @param legFeatures List of Leg Feature Pointers
-   */
+
+
   void publishLegMeasurementArray(std::vector<LegFeaturePtr> legFeatures){
 
     // Abort if List is empty
@@ -1386,6 +1400,7 @@ public:
   leg_measurements_pub_.publish(array);
   ROS_DEBUG("Publishing legs positions on %s", array.header.frame_id.c_str());
   }
+
 
   /**
    * Publish the measurements for debugging and illustration purposes
