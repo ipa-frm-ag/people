@@ -6,6 +6,7 @@
  */
 
 #include <dual_people_leg_tracker/mht/HypothesisTree.h>
+#include <dual_people_leg_tracker/mht/Hypothesis.h>
 
 using namespace mht;
 

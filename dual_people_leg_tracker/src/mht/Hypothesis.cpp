@@ -6,6 +6,7 @@
  */
 
 #include <dual_people_leg_tracker/mht/Hypothesis.h>
+#include <dual_people_leg_tracker/mht/HypothesisTree.h>
 
 // Parameters (from Paper)
 const long double prob_detected_free = 0.3;
@@ -18,7 +19,7 @@ const long double prob_deleted_approved = 0.01;
 const long double prob_new = 0.001;
 const long double prob_fal = 0.003;
 
-Hypothesis::Hypothesis(int cycle):
+Hypothesis::Hypothesis(int cycle, HypothesisTreePtr globalHypothesisTree):
 	numberOfTracks_(),
 	newTrackCostValue_(20),
 	falseAlarmCostValue_(10),
@@ -361,7 +362,7 @@ bool Hypothesis::createChildren(){
 		if(childProbs[i]/maxProb > 0.1){
 
 			// Create child
-			HypothesisPtr childHypothesis(new Hypothesis(cycle_+1));
+			HypothesisPtr childHypothesis(new Hypothesis(cycle_+1, this->globalHypothesisTree));
 			childHypothesis->setParent(shared_from_this());
 
 			// Create the new Tracks

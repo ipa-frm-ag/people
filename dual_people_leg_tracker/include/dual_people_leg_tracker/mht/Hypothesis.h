@@ -12,6 +12,7 @@
 #include <dual_people_leg_tracker/visualization/color_definitions.h>
 #include <dual_people_leg_tracker/mht/Track.h>
 #include <dual_people_leg_tracker/mht/NewTrackAssignment.h>
+#include <dual_people_leg_tracker/mht/HypothesisTree.h>
 
 // Boost includes
 #include <boost/shared_ptr.hpp>
@@ -22,6 +23,9 @@
 
 // System includes
 #include <vector>
+
+class HypothesisTree; // Forward declaration
+typedef boost::shared_ptr<HypothesisTree> HypothesisTreePtr;
 
 class Hypothesis; // Forward declaration
 typedef boost::shared_ptr<Hypothesis> HypothesisPtr;
@@ -53,6 +57,8 @@ private:
 
     std::vector<TrackPtr> tracks_;
 
+    HypothesisTreePtr globalHypothesisTree;
+
 //	extern static enum LABEL{
 //	    OCCLUDED,
 //		DELETED,
@@ -68,7 +74,7 @@ private:
 	unsigned int numberOfMeasurements_;
 
 public:
-	Hypothesis(int cycle);
+	Hypothesis(int cycle, HypothesisTreePtr globalTree);
 	virtual ~Hypothesis();
 
 	/***

@@ -177,7 +177,7 @@ public:
   // MHT Stuff
   bool firstRun;
   //HypothesisPtr rootHypothesis;
-  mht::HypothesisTreePtr hypothesisTree_;
+  HypothesisTreePtr hypothesisTree_;
 
 
   //GlobalConfig* globalConfig;
@@ -259,7 +259,7 @@ public:
     occlusionModel_(new OcclusionModel(tfl_)),
     new_track_creation_likelihood_(0.5),
 	firstRun(true),
-	hypothesisTree_(new mht::HypothesisTree())
+	hypothesisTree_(new HypothesisTree())
   {
     if (g_argc > 1)
     {
@@ -609,7 +609,7 @@ public:
     benchmarking::Timer mhtTimer;
 
     if(firstRun){
-    	HypothesisPtr rootHypothesis = HypothesisPtr(new Hypothesis(-1));
+    	HypothesisPtr rootHypothesis = HypothesisPtr(new Hypothesis(-1, this->hypothesisTree_));
     	mhtTimer.start();
     	rootHypothesis->assignMeasurements(detections);
     	rootHypothesis->createCostMatrix();

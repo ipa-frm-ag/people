@@ -7,7 +7,9 @@
 // Own includes
 #include <dual_people_leg_tracker/mht/Hypothesis.h>
 
-namespace mht{
+class Hypothesis; // Forward declaration
+typedef boost::shared_ptr<Hypothesis> HypothesisPtr;
+
 
 class HypothesisTree; // Forward declaration
 
@@ -26,5 +28,5 @@ public:
 	void setRootHypothesis(HypothesisPtr rootHypothesis);
 };
 
-}
+
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_HYPOTHESISTREE_H_ */
