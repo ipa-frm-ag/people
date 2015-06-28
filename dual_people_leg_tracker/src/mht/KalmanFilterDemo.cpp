@@ -8,8 +8,8 @@ int main(int argc, char **argv)
 {
 
 	// Time setttings
-	double dt = 0.2; // Timestep
-	double duration = 5;
+	double dt = 0.08; // Timestep
+	double duration = 1;
 
 	// System settings
 	Eigen::Matrix<double,4,4> A_; // Transition Matrix
@@ -19,8 +19,10 @@ int main(int argc, char **argv)
 	A_(0,2) = dt;
 	A_(1,3) = dt;
 
+	std::cout << "A_" << A_ << std::endl;
+
 	Eigen::Matrix<double,4,1> x; // Transition Matrix
-	x << 0,0,0.1,1;
+	x << 0,0,0.1,0;
 
 	Eigen::Matrix<double,2,1> z; // Measurement
 
@@ -39,6 +41,7 @@ int main(int argc, char **argv)
 		std::cout << "Kalman Prediction " << kalmanFilter.getPrediction().transpose() << std::endl;
 		std::cout << "Kalman Estimation " << kalmanFilter.getEstimation().transpose() << std::endl;
 
+		std::cout << "Real state " << x.transpose() << std::endl;
 		// Calculate the Mahalanobis distance
 		Eigen::Matrix<double,2,1> estimated_pos;
 		Eigen::Matrix<double,2,1> diff;
@@ -53,6 +56,7 @@ int main(int argc, char **argv)
 
 		x = A_*x;
 		z = H_*x;
+
 
 		kalmanFilter.predict(dt);
 		kalmanFilter.update(z);

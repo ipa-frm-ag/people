@@ -61,6 +61,9 @@ public:
 
 	// Get the measurement prediction
 	Eigen::Matrix<double,2,1> getMeasurementPrediction();
+
+	//Do a update using the lastest measurements
+	void update(Eigen::Vector2d meas);
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_TRACK_H_ */

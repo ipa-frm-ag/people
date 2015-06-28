@@ -39,6 +39,7 @@ public:
 
 public:
 	KalmanFilter(Eigen::Matrix<double,2,1> initialState);
+	//KalmanFilter(const KalmanFilter &obj);
 	virtual ~KalmanFilter();
 
 	// Do the prediction

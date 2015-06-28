@@ -312,8 +312,8 @@ bool Hypothesis::createChildren(){
 	Eigen::Matrix<double, -1, 1> childProbs = Eigen::Matrix<double, -1, 1>::Zero(solutions.size(),1);
 		//double childProbs[solutions.size];
 
-	std::vector<std::vector<NewTrackAssignment> > trackAssignments;
-    std::vector<std::vector<TrackAssignment> > assignmentsFoo;
+	// Holds the assignments
+    std::vector<std::vector<TrackAssignment> > all_assignments;
 
 
 	// Iterate the solutions
@@ -324,8 +324,7 @@ bool Hypothesis::createChildren(){
 	  Eigen::Matrix<int, -1, -1> assignmentMatrix = solIt->assignmentMatrix;
 
 	  // Storage for track Assignments of this solution
-	  std::vector<NewTrackAssignment> solutionTrackAssignments;
-	  std::vector<TrackAssignment> solutionTrackAssignmentFoo;
+	  std::vector<TrackAssignment> assignments;
 
 	  // Iterate the matrix
 	  size_t nCols = assignmentMatrix.cols();
@@ -350,8 +349,8 @@ bool Hypothesis::createChildren(){
 			  // Skip if there is no assignment
 			  if(assignmentMatrix(r,c) == 0) continue;
 
-			  TrackAssignment ass(this->tracks_[r], c, TrackAssignment::DETECTED);
-			  solutionTrackAssignmentFoo.push_back(ass);
+			  TrackAssignment assignment(this->tracks_[r], c, TrackAssignment::DETECTED);
+			  assignments.push_back(assignment);
 			  N_det_F++;
 		  }
 	  }
@@ -363,12 +362,9 @@ bool Hypothesis::createChildren(){
 		  if(assignmentMatrix(i+getNumberOfTracks(),i) == 0) continue;
 
 		  N_new++;
-		  TrackAssignment ass(i, TrackAssignment::NEW);
-		  solutionTrackAssignmentFoo.push_back(ass);
+		  TrackAssignment assignment(i, TrackAssignment::NEW);
+		  assignments.push_back(assignment);
 		  std::cout << "New Track!!!" << std::endl;
-
-		  NewTrackAssignment newTrackAssignment(detections_.col(i));
-		  solutionTrackAssignments.push_back(newTrackAssignment);
 	  }
 
 	  // Iterate false alarms
@@ -378,6 +374,9 @@ bool Hypothesis::createChildren(){
 		  if(assignmentMatrix(i+numberOfMeasurements_+getNumberOfTracks(),i) == 0) continue;
 
 		  N_false++;
+
+		  TrackAssignment assignment(i, TrackAssignment::FALSEALARM);
+		  assignments.push_back(assignment);
 	  }
 
 	  // Iterate occlusion
@@ -387,8 +386,8 @@ bool Hypothesis::createChildren(){
 		  if(assignmentMatrix(i,i+numberOfMeasurements_) == 0) continue;
 
 		  N_occ_F++;
-		  TrackAssignment ass(this->tracks_[i], TrackAssignment::OCCLUDED);
-		  solutionTrackAssignmentFoo.push_back(ass);
+		  TrackAssignment assignment(this->tracks_[i], TrackAssignment::OCCLUDED);
+		  assignments.push_back(assignment);
 	  }
 
 	  // Iterate deletion
@@ -397,8 +396,8 @@ bool Hypothesis::createChildren(){
 		  // Skip if there is no assignment
 		  if(assignmentMatrix(i,i+numberOfMeasurements_+getNumberOfTracks()) == 0) continue;
 		  N_del_F++;
-		  TrackAssignment ass(this->tracks_[i], TrackAssignment::DELETED);
-		  solutionTrackAssignmentFoo.push_back(ass);
+		  TrackAssignment assignment(this->tracks_[i], TrackAssignment::DELETED);
+		  assignments.push_back(assignment);
 	  }
 
 
@@ -416,8 +415,7 @@ bool Hypothesis::createChildren(){
 	  std::cout << RED << childProb << RESET << std::endl;
 	  childProbs[solCounter] = childProb;
 
-	  trackAssignments.push_back(solutionTrackAssignments);
-	  assignmentsFoo.push_back(solutionTrackAssignmentFoo);
+	  all_assignments.push_back(assignments);
 
 	  solCounter++;
 
@@ -438,10 +436,12 @@ bool Hypothesis::createChildren(){
 		// Ratio pruning
 		if(childProbs[i]/maxProb > 0.1){
 
-			std::vector<TrackAssignment> thisAss = assignmentsFoo[i];
-			for(std::vector<TrackAssignment>::iterator assIt = thisAss.begin(); assIt != thisAss.end(); assIt++){
-				std::cout << (*assIt) << " foo" << std::endl;
+			// Print the assignments
+			std::cout << std::endl << "Assignments:" << std::endl;
+			for(std::vector<TrackAssignment>::iterator assIt = all_assignments[i].begin(); assIt != all_assignments[i].end(); assIt++){
+				std::cout << (*assIt) << std::endl;
 			}
+			std::cout << std::endl;
 
 			// Create child
 			HypothesisPtr childHypothesis(new Hypothesis(cycle_+1));
@@ -449,26 +449,60 @@ bool Hypothesis::createChildren(){
 			childHypothesis->setRootCycle(this->getRootCycle());
 			childHypothesis->setParentTime(this->time_);
 
-			// Create the new Tracks
-			std::vector<NewTrackAssignment> newTracks = trackAssignments[i];
-			for(std::vector<NewTrackAssignment>::iterator assIt = newTracks.begin(); assIt != newTracks.end(); assIt++){
-				std::cout << "    A New track for child " << i << " at " << std::endl << assIt->pos_ << std::endl;
-				TrackPtr newTrack(new Track(assIt->pos_, this->time_));
+			// Iterate the assignments
+			std::vector<TrackAssignment> assignments = all_assignments[i];
+			for(std::vector<TrackAssignment>::iterator assIt = assignments.begin(); assIt != assignments.end(); assIt++){
+				switch(assIt->type_){
 
-				childHypothesis->addTrack(newTrack);
+					// New track
+					case TrackAssignment::NEW:
+					{
+						TrackPtr newTrack(new Track(this->detections_.col(assIt->meas_), this->time_));
+						childHypothesis->addTrack(newTrack);
+						std::cout << "    A New track for child " << i << " at " << std::endl << this->detections_.col(assIt->meas_) << std::endl;
+					}
+					break;
+
+					// Detection
+					case TrackAssignment::DETECTED:
+					{
+						TrackPtr copyTrack(new Track( *(assIt->track_) ));
+						childHypothesis->addTrack(copyTrack);
+						std::cout << assIt->track_->getId() << " =>copy  " << copyTrack->getId() << std::endl;
+
+						std::cout << "Update of track " << copyTrack->getId() << std::endl;
+						std::cout << assIt->track_->getMeasurementPrediction() << std::endl;
+						std::cout << copyTrack->getMeasurementPrediction() << std::endl;
+						copyTrack->update(this->detections_.col(assIt->meas_));
+						// TODO, apply measurement !!! After!! making the copy!
+					}
+					break;
+
+					// OCCLUDED
+					case TrackAssignment::OCCLUDED:
+					{
+						// TODO
+					}
+					break;
+
+					// FALSEALARM
+					case TrackAssignment::FALSEALARM:
+					{
+						// TODO
+					}
+					break;
+
+					// DELETED
+					case TrackAssignment::DELETED:
+					{
+						// TODO
+					}
+					break;
+
+				}
+
 			}
 
-			// Copy existing tracks
-			for(size_t i = 0; i < this->getNumberOfTracks(); i++){
-				TrackPtr copyTrack(new Track( *(this->tracks_[i]) ));
-				childHypothesis->addTrack(copyTrack);
-				std::cout << this->tracks_[i]->getId() << " =>copy  " << copyTrack->getId() << std::endl;
-				std::cout << "hypothesis " << getId() << " added a track to its child " << childHypothesis->getId() << std::endl;
-			}
-
-			//ROS_ASSERT(this->globalHypothesisTree_); // ASSERT that this is set
-
-			// Add this to the children
 			this->children_.push_back(childHypothesis);
 			//this->globalHypothesisTree_->addHypothesis(childHypothesis);
 

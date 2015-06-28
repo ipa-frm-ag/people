@@ -12,7 +12,7 @@ int main(int argc, char **argv)
 
 	// Time settings
 	double dt = 0.08; // Timestep
-	double duration = 0.050;
+	double duration = 0.5;
 
 	ros::Time time(0);
 
@@ -69,6 +69,8 @@ int main(int argc, char **argv)
 	for(double t=0; t<duration; t=t+dt){
 		cycle_++;
 		time = time + ros::Duration(dt);
+
+		std::cout << BOLDWHITE << time << " ----- " << cycle_ << RESET << std::endl;
 		// Move
 		for(int i = 0; i < N; i++){
 			objects.col(i) = A_ * objects.col(i);
@@ -82,7 +84,7 @@ int main(int argc, char **argv)
 		rootHypothesis->assignMeasurements(cycle_, detectionsMat, time);
     	rootHypothesis->print();
     	rootHypothesis->coutCurrentSolutions(cycle_);
-		//std::cout << "objects" << std::endl << objects << std::endl;
+		std::cout << "objects" << std::endl << objects << std::endl;
 
 
 

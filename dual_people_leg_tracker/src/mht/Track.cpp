@@ -24,7 +24,7 @@ Track::~Track() {
 
 Track::Track(const Track &obj):
 	initialPos_(obj.initialPos_),
-	kalmanFilter_(obj.initialPos_),
+	kalmanFilter_(obj.kalmanFilter_),
 	initialTime_(obj.initialTime_),
 	lastPredictTime_(obj.lastPredictTime_),
 	state_(obj.state_),
@@ -47,6 +47,10 @@ void Track::predict(ros::Time time){
 
 	// Finished -> Increase the prediction time
 	this->lastPredictTime_ = time;
+}
+
+void Track::update(Eigen::Vector2d meas){
+	kalmanFilter_.update(meas);
 }
 
 // Get the measurement prediction
