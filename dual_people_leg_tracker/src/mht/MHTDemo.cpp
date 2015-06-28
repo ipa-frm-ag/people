@@ -43,8 +43,8 @@ int main(int argc, char **argv)
 	Eigen::Matrix<double,4,4> A_; // Transition Matrix
 
 	Eigen::Matrix<double,4,4> Q_; // System Noise
-	double posNoise = 0.0;
-	double velNoise = 0.0;
+	double posNoise = 0.2;
+	double velNoise = 0.3;
 	Q_ <<    posNoise, 0,        0,        0,
 		     0,        posNoise, 0,        0,
 			 0,        0,        velNoise, 0,
@@ -88,25 +88,21 @@ int main(int argc, char **argv)
 	std::vector<std::pair<double, double> > obj0Points;
 	std::vector<std::pair<double, double> > obj1Points;
 	std::vector<std::pair<double, double> > obj2Points;
+	// Set initial values
+	obj0Points.push_back(std::make_pair(objects(0,0), objects(1,0)));
+	obj1Points.push_back(std::make_pair(objects(0,1), objects(1,1)));
+	obj2Points.push_back(std::make_pair(objects(0,2), objects(1,2)));
+
+	std::vector<std::pair<double, double> > obj0Points_Est;
+	std::vector<std::pair<double, double> > obj1Points_Est;
+	std::vector<std::pair<double, double> > obj2Points_Est;
 
 
 	for(double t=0; t<duration; t=t+dt){
 		cycle_++;
 		time = time + ros::Duration(dt);
 
-		//////////////////////////////////////////////////////////////////////////
-		// GNUPLOT
-		obj0Points.push_back(std::make_pair(objects(0,0), objects(1,0)));
-		obj1Points.push_back(std::make_pair(objects(0,1), objects(1,1)));
-		obj2Points.push_back(std::make_pair(objects(0,2), objects(1,2)));
 
-		gp << "set xrange [-1:12]\nset yrange [-0.1:1]\n";
-		gp << "plot" << gp.file1d(obj0Points) << " with linespoints title 'obj0',"
-				     << gp.file1d(obj1Points) << " with linespoints title 'obj1',"
-					 << gp.file1d(obj2Points) << " with linespoints title 'obj2'"<< std::endl;
-
-		//
-		/////////////////////////////////////////////////////////////////////////
 
 
 		std::cout << BOLDWHITE << time << " ----- " << cycle_ << RESET << std::endl;
@@ -126,8 +122,10 @@ int main(int argc, char **argv)
     	rootHypothesis->printTracks(cycle_+1);
 
 
+
+
 		std::cout << "objects" << std::endl << objects << std::endl;
-		std::cout << "Tracks created " << tracksCreatedCounter << std::endl;
+
 
 
 
@@ -158,7 +156,57 @@ int main(int argc, char **argv)
 //		kalmanFilter.predict(dt);
 //		kalmanFilter.update(z);
 
+		//////////////////////////////////////////////////////////////////////////
+		// GNUPLOT
+		obj0Points.push_back(std::make_pair(objects(0,0), objects(1,0)));
+		obj1Points.push_back(std::make_pair(objects(0,1), objects(1,1)));
+		obj2Points.push_back(std::make_pair(objects(0,2), objects(1,2)));
+
+		gp << "set xrange [-1:12]\nset yrange [-0.1:1]\n";
+		gp << "plot" << gp.file1d(obj0Points) << " with linespoints title 'obj0',"
+				     << gp.file1d(obj1Points) << " with linespoints title 'obj1',"
+					 << gp.file1d(obj2Points) << " with linespoints title 'obj2'"<< std::endl;
+
+		//
+		/////////////////////////////////////////////////////////////////////////
+
 	}
+
+	std::vector<TrackPtr> allTracks;
+	rootHypothesis->getTracks(allTracks, cycle_+1);
+
+	for(size_t i = 0; i < allTracks.size(); i++){
+		switch(i){
+			case 0:
+	    		for(std::vector<Eigen::Vector4d>::iterator stateIt = allTracks[i]->estimated_states_.begin(); stateIt != allTracks[i]->estimated_states_.end(); stateIt++){
+	    			std::cout << (*stateIt).transpose() << std::endl;
+	    			obj0Points_Est.push_back(std::make_pair((*stateIt)[0], (*stateIt)[1]));
+	    		}
+	    		break;
+			case 1:
+	    		for(std::vector<Eigen::Vector4d>::iterator stateIt = allTracks[i]->estimated_states_.begin(); stateIt != allTracks[i]->estimated_states_.end(); stateIt++){
+	    			std::cout << (*stateIt).transpose() << std::endl;
+	    			obj1Points_Est.push_back(std::make_pair((*stateIt)[0], (*stateIt)[1]));
+	    		}
+	    		break;
+			case 2:
+	    		for(std::vector<Eigen::Vector4d>::iterator stateIt = allTracks[i]->estimated_states_.begin(); stateIt != allTracks[i]->estimated_states_.end(); stateIt++){
+	    			std::cout << (*stateIt).transpose() << std::endl;
+	    			obj2Points_Est.push_back(std::make_pair((*stateIt)[0], (*stateIt)[1]));
+	    		}
+	    		break;
+
+		}
+
+	}
+
+	gp << "replot" << gp.file1d(obj0Points_Est) << " with circles title 'obj0_Est'" << std::endl;
+	gp << "replot" << gp.file1d(obj1Points_Est) << " with circles title 'obj1_Est'" << std::endl;
+	gp << "replot" << gp.file1d(obj2Points_Est) << " with circles title 'obj2_Est'" << std::endl;
+
+
+
+
 
 
 

@@ -38,10 +38,10 @@ KalmanFilter::KalmanFilter(Eigen::Matrix<double,2,1> initialState) {
 	P_prior_  = P_post_;
 
 	// Process Covariance
-	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*0.001;
+	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*0.01;
 
 	// Measurement Covariance
-	R_ = Eigen::Matrix<double,-1,-1>::Identity(2,2)*0.00001;
+	R_ = Eigen::Matrix<double,-1,-1>::Identity(2,2)*0.001;
 
 
 

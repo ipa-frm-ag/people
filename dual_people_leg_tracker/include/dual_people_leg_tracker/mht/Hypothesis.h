@@ -148,6 +148,9 @@ public:
 	// Print all tracks of certain cycle
 	void printTracks(int cycle);
 
+	// Get a vector of all the tracks
+	bool getTracks(std::vector<TrackPtr> &allTracks,int cycle);
+
 	// Std Cout current solutions
 	void coutCurrentSolutions(int cycle);
 

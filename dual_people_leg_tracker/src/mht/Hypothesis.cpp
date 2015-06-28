@@ -577,6 +577,18 @@ void Hypothesis::printTracks(int cycle){
 		}
 }
 
+bool Hypothesis::getTracks(std::vector<TrackPtr> &allTracks,int cycle){
+	if(this->cycle_ ==  cycle){
+		allTracks.reserve( allTracks.size() + this->tracks_.size() );
+		allTracks.insert(allTracks.end(), this->tracks_.begin(), this->tracks_.end());
+		return true;
+	}
+	else
+		for(std::vector<HypothesisPtr>::iterator hypoIt = this->children_.begin(); hypoIt != this->children_.end(); hypoIt++){
+			(*hypoIt)->getTracks(allTracks,cycle);
+		}
+}
+
 void Hypothesis::coutCurrentSolutions(int cycle){
 	if(this->cycle_ ==  cycle)
 		this->stdCoutSolutions();
