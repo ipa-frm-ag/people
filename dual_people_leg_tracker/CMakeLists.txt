@@ -74,6 +74,7 @@ add_library(dual_people_leg_tracker
             #src/mht/HypothesisTree.cpp
 			src/mht/Hypothesis.cpp
             src/mht/NewTrackAssignment.cpp
+            src/mht/TrackAssignment.cpp
             src/mht/Track.cpp
             src/mht/KalmanFilter.cpp
 			src/mht/HypothesisTree.cpp
@@ -92,23 +93,47 @@ catkin_package(INCLUDE_DIRS
                  visualization_msgs 
                  message_runtime
                  leg_detector
+                 tf
+                 roscpp
                  )
   
 # Demo of the multivariate normal distribution
 # add_executable(eigenmvn_demo src/eigenmvn_demo.cpp)
 
-## The leg detector
+## The dual tracker
 add_executable(dual_tracker
                   src/dual_tracker.cpp 
+               )
+               
+add_executable(MHTDemo
+                  src/mht/MHTDemo.cpp
+                  src/advanced_tracker_particle.cpp
+		          src/people_particle_filter.cpp
+		          src/models/occlusion_model.cpp
+		          src/models/advanced_measmodel_pos.cpp
+		          src/models/advanced_sysmodel_pos_vel.cpp
+		          src/distributions/multivariate_gaussian_pos_vel.cpp
+		          src/distributions/gaussian_pos_vel_mod.cpp
+		          src/leg_feature.cpp
+		          src/people_tracker.cpp
+		          #src/mht/HypothesisTree.cpp
+				  src/mht/Hypothesis.cpp
+		          src/mht/NewTrackAssignment.cpp
+		          src/mht/TrackAssignment.cpp
+		          src/mht/Track.cpp
+		          src/mht/KalmanFilter.cpp
+			      src/mht/HypothesisTree.cpp
+		          libs/libhungarian/hungarian.c
                )
 
 ## Add cmake target dependencies of the executable/library
 add_dependencies(dual_tracker people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-message(STATUS "DUAL TRACKER_LIBS" ${catkin_LIBRARIES})
-
 ## Specify libraries to link a library or executable target against
 target_link_libraries(dual_tracker dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES})
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(MHTDemo ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES})
 
 ########################################################
 ## Demos
@@ -131,6 +156,11 @@ add_executable(KalmanFilterDemo
                   src/mht/KalmanFilterDemo.cpp
                   src/mht/KalmanFilter.cpp 
                )
+            
+
+#target_link_libraries(MHTDemo dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES})
+
+               
 #add_dependencies(KalmanFilterDemo people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})               
 
 #target_link_libraries(KalmanFilterDemo dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES})

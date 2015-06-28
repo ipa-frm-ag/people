@@ -19,7 +19,7 @@ public:
 	Eigen::Vector2d pos_;
 
 public:
-	NewTrackAssignment(tf::Stamped<tf::Vector3>& pos);
+	NewTrackAssignment(Eigen::Matrix<double,2,1> meas);
 	virtual ~NewTrackAssignment();
 };
 

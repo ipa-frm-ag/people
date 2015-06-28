@@ -176,9 +176,7 @@ public:
 
   // MHT Stuff
   bool firstRun;
-  //HypothesisPtr rootHypothesis;
-  HypothesisTreePtr hypothesisTree_;
-
+  HypothesisPtr rootHypothesis;
 
   //GlobalConfig* globalConfig;
 
@@ -258,8 +256,7 @@ public:
     cycle_(0),
     occlusionModel_(new OcclusionModel(tfl_)),
     new_track_creation_likelihood_(0.5),
-	firstRun(true),
-	hypothesisTree_(new HypothesisTree())
+	firstRun(true)
   {
     if (g_argc > 1)
     {
@@ -605,34 +602,48 @@ public:
     //////////////////////////////////////////////////////////////////////////
     //// MHT
     //////////////////////////////////////////////////////////////////////////
+
+    // Transform the measurements into a Matrix
+    Eigen::Matrix<double,2,-1> detectionsMat;
+    detectionsMat = Eigen::Matrix<double,2,-1>::Zero(2,detections.size());
+
+    for(int i = 0; i < detections.size(); i++){
+    	detectionsMat(0,i) = detections[i]->point_[0];
+    	detectionsMat(1,i) = detections[i]->point_[1];
+    }
+
+
     ROS_DEBUG("%sMHT [Cycle %u]", BOLDWHITE, cycle_);
     benchmarking::Timer mhtTimer;
-
+    mhtTimer.start();
     if(firstRun){
-    	HypothesisPtr rootHypothesis = HypothesisPtr(new Hypothesis(-1, this->hypothesisTree_));
-    	mhtTimer.start();
-    	rootHypothesis->assignMeasurements(detections);
-    	rootHypothesis->createCostMatrix();
-    	rootHypothesis->solveCostMatrix();
-    	rootHypothesis->stdCoutSolutions();
 
-    	rootHypothesis->createChildren();
+    	rootHypothesis = HypothesisPtr(new Hypothesis(0));
+    	rootHypothesis->setParentProbability(1.0);
+    	rootHypothesis->setParentTime(scan->header.stamp);
+    	rootHypothesis->assignMeasurements(cycle_, detectionsMat, scan->header.stamp);
 
-    	hypothesisTree_->setRootHypothesis(rootHypothesis);
+    	//rootHypothesis->createCostMatrix();
+    	//rootHypothesis->solveCostMatrix();
+    	//rootHypothesis->stdCoutSolutions();
+
+
+    	//rootHypothesis->createChildren();
     }
     else
     {
-
+    	rootHypothesis->assignMeasurements(cycle_, detectionsMat, scan->header.stamp);
+    	rootHypothesis->print();
+    	//rootHypothesis->coutCurrentSolutions(cycle_);
     }
 
     mhtTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - MHT",__func__);
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"DualTracker::%s - MHT took %f ms",__func__, mhtTimer.getElapsedTimeMs());
     //ROS_DEBUG("%MHT Done! [Cycle %u]", BOLDWHITE, cycle_);
-    std::cout << "Foo123" << std::endl;
 
     firstRun = false;
-    ROS_ASSERT(false);
+    ROS_ASSERT(cycle_ < 1);
     //////////////////////////////////////////////////////////////////////////
     //// Joint Probability Data Association
     //////////////////////////////////////////////////////////////////////////
@@ -753,8 +764,8 @@ public:
     //std::cout << "propagated.size() " << propagated.size() << std::endl;
     //std::cout << "probabilities.rows() " << probabilities.rows() << std::endl;
 
-    ROS_ASSERT(propagated.size() == probabilities.rows());
-    ROS_ASSERT(detections.size() == probabilities.cols());
+    //ROS_ASSERT(propagated.size() == probabilities.rows());
+    //ROS_ASSERT(detections.size() == probabilities.cols());
 
     for(int j = 0; j < probabilities.cols(); j++){
       for(int i = 0; i < probabilities.rows(); i++){
@@ -1015,8 +1026,6 @@ public:
 
 
 
-    assert(false);
-
     // Iterate through all detections
     for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
         detectionIt != detections.end();
@@ -1050,10 +1059,6 @@ public:
       {
         std::cout << "Meas. Prob." << (*detectionIt)->cluster_->probability_ << std::endl;
         std::cout << "#########################################################################################################" << std::endl;
-        ROS_ASSERT(false);
-
-
-        assert(false);
 
         if(cluster->getProbability( )> new_track_min_probability_){
           loc.setZ(0); // TODO ugly fix

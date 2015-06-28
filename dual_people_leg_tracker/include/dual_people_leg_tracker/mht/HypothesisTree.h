@@ -29,8 +29,18 @@ public:
 	// Set the root hypothesis
 	void setRootHypothesis(HypothesisPtr rootHypothesis);
 
+	// Get the root hypothesis
+	HypothesisPtr getRootHypothesis(){
+		return this->rootHypothesis_;
+	}
+
 	// Add Hypothesis to handle
 	void addHypothesis(HypothesisPtr hypothesis);
+
+	// Update the hypothesis(assign new detections)
+	void update(int cycle, ros::Time time, std::vector<DetectionPtr> detections);
+
+
 };
 
 

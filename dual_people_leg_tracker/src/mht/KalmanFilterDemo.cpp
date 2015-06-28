@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 		estimated_pos = kalmanFilter.getEstimation().block(0,0,2,1);
 
 		diff = estimated_pos - z;
-		double value = diff.transpose()*kalmanFilter.S_k.inverse()*diff;
+		double value = diff.transpose()*kalmanFilter.S_k_.inverse()*diff;
 
 		std::cout << "Mahalanobis Distance " << sqrt(value) << std::endl;
 

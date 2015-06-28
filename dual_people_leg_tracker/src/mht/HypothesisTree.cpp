@@ -35,3 +35,16 @@ void HypothesisTree::addHypothesis(HypothesisPtr hypothesis){
 	std::cout << " Hypothesis from cycle " << cycle << " was added to the tree" << std::endl;
 
 }
+
+// Predict all hypothesis of the cycle
+void HypothesisTree::update(int cycle, ros::Time time, std::vector<DetectionPtr> detections){
+	std::cout << "Hypothesis Tree is doing a update" << std::endl;
+	// TODO Check if this really works
+	for(std::vector<HypothesisPtr>::iterator hypoIt; this->hypothesis[cycle].begin() != this->hypothesis[cycle].end(); hypoIt++){
+		//(*hypoIt)->assignMeasurements(detections, time);
+		//(*hypoIt)->setTime(time);
+	}
+
+	std::cout << " Hypothesis from cycle " << cycle << " are assigned the new detections" << std::endl;
+
+}

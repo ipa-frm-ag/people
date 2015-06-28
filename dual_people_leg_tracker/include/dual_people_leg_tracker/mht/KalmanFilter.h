@@ -17,6 +17,8 @@ class KalmanFilter {
 public:
 	Eigen::Matrix<double,4,4> A_; // Transition Matrix
 
+	Eigen::Matrix<double,4,4> A_dt; // Changes with dt
+
 	Eigen::Matrix<double,2,4> H_; // Transition Matrix
 
 	Eigen::Matrix<double,4,4> P_prior_; // Predicted (a priori) estimate covariance
@@ -27,13 +29,13 @@ public:
 
 	Eigen::Matrix<double,2,2> R_; // Measurement Covariance
 
-	Eigen::Matrix<double,2,2> S_k; // Residual Covariance
+	Eigen::Matrix<double,2,2> S_k_; // Residual Covariance
 
-	Eigen::Matrix<double,4,1> state_; // The current State
+	Eigen::Matrix<double,4,1> initial_state_; // The current State
 
-	Eigen::Matrix<double,4,1> state_predicted; // The current State
+	Eigen::Matrix<double,4,1> state_predicted_; // The current State
 
-	Eigen::Matrix<double,4,1> state_estimated; // The state estimation
+	Eigen::Matrix<double,4,1> state_estimated_; // The state estimation
 
 public:
 	KalmanFilter(Eigen::Matrix<double,2,1> initialState);
@@ -48,8 +50,13 @@ public:
 	// Get the prediction
 	Eigen::Matrix<double,4,1> getEstimation();
 
+	// Get the measurement prediction
+	Eigen::Matrix<double,2,1> getMeasurementPrediction();
+
 	// Do a update
 	void update(Eigen::Matrix<double,2,1>);
+
+
 };
 }
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_KALMANFILTER_H_ */
