@@ -38,7 +38,7 @@ KalmanFilter::KalmanFilter(Eigen::Matrix<double,2,1> initialState) {
 	P_prior_  = P_post_;
 
 	// Process Covariance
-	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*0.000001;
+	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*0.001;
 
 	// Measurement Covariance
 	R_ = Eigen::Matrix<double,-1,-1>::Identity(2,2)*0.00001;
@@ -70,7 +70,7 @@ std::cout << "R_ is " << std::endl << R_ <<  std::endl;
 }*/
 
 KalmanFilter::~KalmanFilter() {
-	std::cout << "A KalmanFilter was removed " <<  std::endl;
+	//std::cout << "A KalmanFilter was removed " <<  std::endl;
 }
 
 // Predict the Kalman Filter dt_ forward

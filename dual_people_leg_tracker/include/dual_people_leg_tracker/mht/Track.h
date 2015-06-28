@@ -38,11 +38,16 @@ private:
 
 	ros::Time initialTime_; // Time the Track was created
 	ros::Time lastPredictTime_; // Time the last prediction was made against
+	ros::Time lastUpdateTime_; // Time towards the last update was done
 
 	mht::KalmanFilter kalmanFilter_; // The Kalman Filter
 
+	std::vector<ros::Time> estimation_times_; // The update and prediction times
+
 public:
 	Eigen::Vector2d initialPos_;
+
+	std::vector<Eigen::Vector4d> estimated_states_;
 
 
 
@@ -54,7 +59,7 @@ public:
 	virtual ~Track();
 
 	// Return the id
-	int getId(){ return this->id_; };
+	int getId() const{ return this->id_; };
 
 	// Predict using the Kalman Filter towards the given time
 	void predict(ros::Time time);
@@ -63,7 +68,11 @@ public:
 	Eigen::Matrix<double,2,1> getMeasurementPrediction();
 
 	//Do a update using the lastest measurements
-	void update(Eigen::Vector2d meas);
+	void update(Eigen::Vector2d meas, ros::Time time);
+
+	void print();
+
+
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_TRACK_H_ */

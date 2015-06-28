@@ -7,6 +7,7 @@
 
 #include <dual_people_leg_tracker/mht/Hypothesis.h>
 #include <dual_people_leg_tracker/mht/HypothesisTree.h>
+#include <algorithm>
 
 // Parameters (from Paper)
 const long double prob_detected_free = 0.3;
@@ -19,12 +20,13 @@ const long double prob_deleted_approved = 0.01;
 const long double prob_new = 0.001;
 const long double prob_fal = 0.003;
 
+
 Hypothesis::Hypothesis(int cycle):
 	newTrackCostValue_(20),
 	falseAlarmCostValue_(10),
 	deletionCostValue_(50),
 	occlusionCostValue_(120),
-	invalidValue_(-1000),
+	invalidValue_(-9000),
 	probability_(1.0),
 	cycle_(cycle),
 	root_cycle_(0),
@@ -133,14 +135,14 @@ bool Hypothesis::createCostMatrix(){
     // Fill the Occlusions
     costMatrix.block(0,numberOfMeasurements_+getNumberOfTracks(),getNumberOfTracks(),getNumberOfTracks()).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(getNumberOfTracks(),1,this->occlusionCostValue_);
 
-    costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*getNumberOfTracks()) = Eigen::Matrix< int, -1, -1>::Constant(2*numberOfMeasurements_,2*numberOfTracks,-100);
+    costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*getNumberOfTracks()) = Eigen::Matrix< int, -1, -1>::Constant(2*numberOfMeasurements_,2*numberOfTracks,-1000);
     if(getNumberOfTracks() > numberOfMeasurements_){
     	costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfMeasurements_,1,0);
     }
     else{
 
-    	costMatrix.block(numberOfTracks,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,-100);
-    	costMatrix.block(numberOfTracks+numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,-100);
+    	costMatrix.block(numberOfTracks,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,-1000);
+    	costMatrix.block(numberOfTracks+numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,-1000);
 
     	costMatrix.block(numberOfTracks,numberOfMeasurements_,2*numberOfTracks,2*numberOfTracks).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfTracks,1,0);
     }
@@ -155,7 +157,8 @@ bool Hypothesis::createCostMatrix(){
         	// Use the distance between measurement and measurement prediction
         	double dist = (measPrediction - this->detections_.col(m)).norm();
 
-        	costMatrix(t, m) = ((int) (50 / dist) * 100) / 100;
+        	costMatrix(t, m) = std::min(1000,((int) (50 / dist) * 100) / 100);
+        	//costMatrix(t, m) = (int) (sigmoid(dist,1,0.5)*1000);
         }
     }
 
@@ -349,7 +352,8 @@ bool Hypothesis::createChildren(){
 			  // Skip if there is no assignment
 			  if(assignmentMatrix(r,c) == 0) continue;
 
-			  TrackAssignment assignment(this->tracks_[r], c, TrackAssignment::DETECTED);
+			  TrackAssignment assignment;
+			  assignment.setDetection(this->tracks_[r],c);
 			  assignments.push_back(assignment);
 			  N_det_F++;
 		  }
@@ -362,7 +366,8 @@ bool Hypothesis::createChildren(){
 		  if(assignmentMatrix(i+getNumberOfTracks(),i) == 0) continue;
 
 		  N_new++;
-		  TrackAssignment assignment(i, TrackAssignment::NEW);
+		  TrackAssignment assignment;
+		  assignment.setNew(i);
 		  assignments.push_back(assignment);
 		  std::cout << "New Track!!!" << std::endl;
 	  }
@@ -375,7 +380,8 @@ bool Hypothesis::createChildren(){
 
 		  N_false++;
 
-		  TrackAssignment assignment(i, TrackAssignment::FALSEALARM);
+		  TrackAssignment assignment;
+		  assignment.isFalseAlarm();
 		  assignments.push_back(assignment);
 	  }
 
@@ -386,7 +392,8 @@ bool Hypothesis::createChildren(){
 		  if(assignmentMatrix(i,i+numberOfMeasurements_) == 0) continue;
 
 		  N_occ_F++;
-		  TrackAssignment assignment(this->tracks_[i], TrackAssignment::OCCLUDED);
+		  TrackAssignment assignment;
+		  assignment.setOcclusion(this->tracks_[i]);
 		  assignments.push_back(assignment);
 	  }
 
@@ -396,7 +403,8 @@ bool Hypothesis::createChildren(){
 		  // Skip if there is no assignment
 		  if(assignmentMatrix(i,i+numberOfMeasurements_+getNumberOfTracks()) == 0) continue;
 		  N_del_F++;
-		  TrackAssignment assignment(this->tracks_[i], TrackAssignment::DELETED);
+		  TrackAssignment assignment;
+		  assignment.setDeletion(this->tracks_[i]);
 		  assignments.push_back(assignment);
 	  }
 
@@ -439,67 +447,67 @@ bool Hypothesis::createChildren(){
 			// Print the assignments
 			std::cout << std::endl << "Assignments:" << std::endl;
 			for(std::vector<TrackAssignment>::iterator assIt = all_assignments[i].begin(); assIt != all_assignments[i].end(); assIt++){
-				std::cout << (*assIt) << std::endl;
+				assIt->print();
 			}
-			std::cout << std::endl;
+			std::cout << std::endl << "Assignments done" << std::endl;
 
 			// Create child
 			HypothesisPtr childHypothesis(new Hypothesis(cycle_+1));
 			childHypothesis->setParentProbability(this->probability_);
 			childHypothesis->setRootCycle(this->getRootCycle());
 			childHypothesis->setParentTime(this->time_);
+			childHypothesis->setProbability(childProbs[i]);
 
 			// Iterate the assignments
 			std::vector<TrackAssignment> assignments = all_assignments[i];
 			for(std::vector<TrackAssignment>::iterator assIt = assignments.begin(); assIt != assignments.end(); assIt++){
-				switch(assIt->type_){
 
-					// New track
-					case TrackAssignment::NEW:
-					{
-						TrackPtr newTrack(new Track(this->detections_.col(assIt->meas_), this->time_));
-						childHypothesis->addTrack(newTrack);
-						std::cout << "    A New track for child " << i << " at " << std::endl << this->detections_.col(assIt->meas_) << std::endl;
-					}
-					break;
+				// New track
+				if(assIt->isNew())
+				{
+					TrackPtr newTrack(new Track(this->detections_.col(assIt->meas_), this->time_));
+					childHypothesis->addTrack(newTrack);
+					std::cout << "    A New track for child " << i << " at " << std::endl << this->detections_.col(assIt->meas_) << std::endl;
 
-					// Detection
-					case TrackAssignment::DETECTED:
-					{
-						TrackPtr copyTrack(new Track( *(assIt->track_) ));
-						childHypothesis->addTrack(copyTrack);
-						std::cout << assIt->track_->getId() << " =>copy  " << copyTrack->getId() << std::endl;
-
-						std::cout << "Update of track " << copyTrack->getId() << std::endl;
-						std::cout << assIt->track_->getMeasurementPrediction() << std::endl;
-						std::cout << copyTrack->getMeasurementPrediction() << std::endl;
-						copyTrack->update(this->detections_.col(assIt->meas_));
-						// TODO, apply measurement !!! After!! making the copy!
-					}
-					break;
-
-					// OCCLUDED
-					case TrackAssignment::OCCLUDED:
-					{
-						// TODO
-					}
-					break;
-
-					// FALSEALARM
-					case TrackAssignment::FALSEALARM:
-					{
-						// TODO
-					}
-					break;
-
-					// DELETED
-					case TrackAssignment::DELETED:
-					{
-						// TODO
-					}
-					break;
-
+					tracksCreatedCounter++;
 				}
+
+				// Detection
+				if(assIt->isDetection())
+				{
+					TrackPtr copyTrack(new Track( *(assIt->getTrack()) ));
+					childHypothesis->addTrack(copyTrack);
+					std::cout << assIt->getTrack()->getId() << " =>copy  " << copyTrack->getId() << std::endl;
+
+					std::cout << "Update of track " << copyTrack->getId() << std::endl;
+					std::cout << assIt->getTrack()->getMeasurementPrediction() << std::endl;
+					std::cout << copyTrack->getMeasurementPrediction() << std::endl;
+					copyTrack->update(this->detections_.col(assIt->meas_), this->time_);
+					// TODO, apply measurement !!! After!! making the copy!
+				}
+
+
+				// OCCLUDED
+				if(assIt->isOcclusion())
+				{
+					// TODO
+				}
+
+
+				// FALSEALARM
+				if(assIt->isFalseAlarm())
+				{
+					// TODO
+				}
+
+
+				// DELETED
+				if(assIt->isDeletion())
+				{
+					// TODO
+				}
+
+
 
 			}
 
@@ -544,10 +552,29 @@ void Hypothesis::print(){
 	for(int i=0; i < nTabs; i++){
 		std::cout << "  ";
 	}
-	std::cout << "->HYP[ID:" << getId() << " cyc: " << getCycle() << " nCh: " << this->children_.size() << " nT: " << getNumberOfTracks() << " dt:" << this->dt_ << "]" << std::endl;
+	std::cout << "->HYP[ID:" << getId() << " prob:" << RED << this->probability_ << RESET << " cyc: " << getCycle() << " nCh: " << this->children_.size() << " nT: " << getNumberOfTracks() << " dt:" << this->dt_ << "]" << std::endl;
 	for(std::vector<HypothesisPtr>::iterator hypoIt = this->children_.begin(); hypoIt != this->children_.end(); hypoIt++){
 		(*hypoIt)->print();
 	}
+}
+
+// Print yourself
+void Hypothesis::printTracks(){
+	std::cout << "Tracks of HYP[ID:" << getId() << " prob:" << RED << this->probability_ << RESET << " cyc: " << getCycle() << " nCh: " << this->children_.size() << " nT: " << getNumberOfTracks() << " dt:" << this->dt_ << "]" << std::endl;
+
+	for(std::vector<TrackPtr>::iterator trackIt = this->tracks_.begin(); trackIt != this->tracks_.end(); trackIt++){
+		std::cout << "Track:" << (*trackIt)->getId() << std::endl;
+		(*trackIt)->print();
+	}
+}
+
+void Hypothesis::printTracks(int cycle){
+	if(this->cycle_ ==  cycle)
+		this->printTracks();
+	else
+		for(std::vector<HypothesisPtr>::iterator hypoIt = this->children_.begin(); hypoIt != this->children_.end(); hypoIt++){
+			(*hypoIt)->printTracks(cycle);
+		}
 }
 
 void Hypothesis::coutCurrentSolutions(int cycle){
@@ -561,4 +588,8 @@ void Hypothesis::coutCurrentSolutions(int cycle){
 
 void Hypothesis::setParentTime(ros::Time time){
 	this->parent_time_ = time;
+}
+
+void Hypothesis::setProbability(double probabilty){
+	this->probability_ = probabilty;
 }

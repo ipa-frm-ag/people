@@ -17,7 +17,7 @@
  * @param b Shift
  * @return
  */
-double sigmoid(double x, double a=1.0, double b=0.0)
+inline double sigmoid(double x, double a=1.0, double b=0.0)
 {
   return 1.0 / (1.0 + exp(-a*(x-b)));
 }
@@ -29,7 +29,7 @@ double sigmoid(double x, double a=1.0, double b=0.0)
  * @param lineVector Vector of the line
  * @return
  */
-double distance(tf::Vector3 point, tf::Vector3 pointOnLine, tf::Vector3 lineVector){
+inline double distance(tf::Vector3 point, tf::Vector3 pointOnLine, tf::Vector3 lineVector){
 
   // Normalize
   lineVector = lineVector.normalize();

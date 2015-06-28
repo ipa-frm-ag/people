@@ -8,55 +8,66 @@
 #include <dual_people_leg_tracker/mht/TrackAssignment.h>
 
 // Detection
-TrackAssignment::TrackAssignment(TrackPtr track, int meas, TrackAssignment::LABEL label){
-	ROS_ASSERT(label == TrackAssignment::DETECTED);
-	this->type_ = TrackAssignment::DETECTED;
-	this->track_ = track;
-	this->meas_ = meas;
-}
+TrackAssignment::TrackAssignment():
+	is_deletion_(false),
+	is_occlusion_(false),
+	is_falsealarm_(false),
+	is_new_(false),
+	is_detection_(false)
+{
 
-// Deletion or Occlusion
-TrackAssignment::TrackAssignment(TrackPtr track, TrackAssignment::LABEL label){
-	ROS_ASSERT(label == TrackAssignment::OCCLUDED || label == TrackAssignment::DELETED);
-	this->type_ = label;
-	this->track_ = track;
-}
-
-// New
-TrackAssignment::TrackAssignment(int meas, TrackAssignment::LABEL label){
-	ROS_ASSERT(label == TrackAssignment::NEW);
-	this->type_ = TrackAssignment::NEW;
-	this->meas_ = meas;
-}
-
-// FALSE
-TrackAssignment::TrackAssignment(TrackAssignment::LABEL label){
-	ROS_ASSERT(label == TrackAssignment::FALSEALARM);
-	this->type_ == label;
 }
 
 TrackAssignment::~TrackAssignment() {
 
 }
 
-std::ostream& operator<<(std::ostream& os, const TrackAssignment& dt){
+/*std::ostream& operator<<(std::ostream& os, const TrackAssignment& dt){
 	switch(dt.type_){
-		case TrackAssignment::DETECTED:
-			os << "TRACK[" << dt.track_->getId() << "] is DETECTED BY MEAS[" << dt.meas_ << "]";
+		case DETECTED:
+			os << "TRACK[" << dt.getTrack()->getId() << "] is DETECTED BY MEAS[" << dt.meas_ << "]";
 			break;
-		case TrackAssignment::OCCLUDED:
-			os << "TRACK[" << dt.track_->getId() << "] is OCCLUDED";
+		case OCCLUDED:
+			os << "TRACK[" << dt.getTrack()->getId() << "] is OCCLUDED";
 			break;
-		case TrackAssignment::DELETED:
-			os << "TRACK[" << dt.track_->getId() << "] is DELETED";
+		case DELETED:
+			os << "TRACK[" << dt.getTrack()->getId() << "] is DELETED";
 			break;
-		case TrackAssignment::NEW:
+		case NEW:
 			os << "NEWTRACK";
 			break;
-		case TrackAssignment::FALSEALARM:
+		case FALSEALARM:
 			os << "MEAS[" << dt.meas_ << "] FALSE ALARM";
+			break;
+		default:
+			std::cout << "Somethink is wrong" << std::endl;
+			ROS_ASSERT(false);
 			break;
 	}
 	return os;
 
+}*/
+
+void TrackAssignment::print(){
+
+	if(isDetection())
+		std::cout << "TRACK[" << getTrack()->getId() << "] is DETECTED BY MEAS[" << meas_ << "]" << std::endl;
+
+	if(isOcclusion())
+		std::cout << "TRACK[" << getTrack()->getId() << "] is OCCLUDED" << std::endl;
+
+	if(isDeletion())
+		std::cout << "TRACK[" << getTrack()->getId() << "] is DELETED" << std::endl;
+
+	if(isNew())
+		std::cout << "NEWTRACK" << std::endl;
+
+	if(isFalseAlarm())
+		std::cout << "MEAS[" << meas_ << "] FALSE ALARM" << std::endl;
+
+}
+
+TrackPtr TrackAssignment::getTrack() const{
+	ROS_ASSERT(isDetection()  || isOcclusion() || isDeletion());
+	return this->track_;
 }

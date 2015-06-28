@@ -31,6 +31,7 @@ typedef boost::shared_ptr<Hypothesis> HypothesisPtr;
 
 // Id counter
 static int hypothesisIdCounter = 0;
+static int tracksCreatedCounter = 0;
 
 class Hypothesis :  public boost::enable_shared_from_this<Hypothesis>{
 private:
@@ -141,6 +142,12 @@ public:
 	// Print yourself
 	void print();
 
+	// Print all Tracks of this hypothesis
+	void printTracks();
+
+	// Print all tracks of certain cycle
+	void printTracks(int cycle);
+
 	// Std Cout current solutions
 	void coutCurrentSolutions(int cycle);
 
@@ -149,6 +156,9 @@ public:
 
 	// Get the id
 	int getId(){ return this->id_; };
+
+	// Set the probability
+	void setProbability(double probabilty);
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_HYPOTHESIS_H_ */
