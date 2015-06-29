@@ -84,3 +84,7 @@ void Track::setApproved(){
 void Track::unApprove(){
   this->is_approved_ = false;
 }
+
+double Track::getMeasurementLikelihood(Eigen::Vector2d meas){
+  return kalmanFilter_.getMeasurementLikelihood(meas);
+}

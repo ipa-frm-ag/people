@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 	// Time settings
 	double dt = 0.08; // Timestep
-	double duration = 0.20;
+	double duration = 1.4;
 
 	ros::Time time(0);
 
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 
 	Eigen::Matrix<double,4,4> Q_; // System Noise
 	double posNoise = 0.2;
-	double velNoise = 1;
+	double velNoise = 2;
 	Q_ <<    posNoise, 0,        0,        0,
 		     0,        posNoise, 0,        0,
 			 0,        0,        velNoise, 0,
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 
 		rootHypothesis->assignMeasurements(cycle_, detectionsMat, time);
     	//rootHypothesis->print();
-    	//rootHypothesis->coutCurrentSolutions(cycle_);
+    rootHypothesis->coutCurrentSolutions(cycle_);
     	//rootHypothesis->printTracks(cycle_+1);
 
 
@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 		obj1Points.push_back(std::make_pair(objects(0,1), objects(1,1)));
 		obj2Points.push_back(std::make_pair(objects(0,2), objects(1,2)));
 
-		gp << "set xrange [-1:12]\nset yrange [-0.1:4]\n";
+		gp << "set xrange [-1:12]\nset yrange [-0.1:8]\n";
 		gp << "plot" << gp.file1d(obj0Points) << " with linespoints title 'obj0',"
 				     << gp.file1d(obj1Points) << " with linespoints title 'obj1',"
 					 << gp.file1d(obj2Points) << " with linespoints title 'obj2'"<< std::endl;

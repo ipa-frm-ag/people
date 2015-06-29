@@ -37,6 +37,8 @@ public:
 
 	Eigen::Matrix<double,4,1> state_estimated_; // The state estimation
 
+	Eigen::Vector2d measurement_prediction_; // Current measurement prediction
+
 public:
 	KalmanFilter(Eigen::Matrix<double,2,1> initialState);
 	//KalmanFilter(const KalmanFilter &obj);
@@ -57,6 +59,8 @@ public:
 	// Do a update
 	void update(Eigen::Matrix<double,2,1>);
 
+	// Get measurement likelihood
+  double getMeasurementLikelihood(Eigen::Vector2d meas);
 
 };
 }

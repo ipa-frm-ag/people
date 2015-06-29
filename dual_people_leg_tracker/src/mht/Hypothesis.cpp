@@ -22,10 +22,10 @@ const long double prob_fal = 0.003;
 
 
 Hypothesis::Hypothesis(int cycle):
-	newTrackCostValue_(30),
+	newTrackCostValue_(15),
 	falseAlarmCostValue_(5),
-	deletionCostValue_(30),
-	occlusionCostValue_(120),
+	deletionCostValue_(10),
+	occlusionCostValue_(40),
 	invalidValue_(-9000),
 	probability_(1.0),
 	cycle_(cycle),
@@ -154,11 +154,15 @@ bool Hypothesis::createCostMatrix(){
         	Eigen::Vector2d measPrediction;
         	measPrediction = this->tracks_[t]->getMeasurementPrediction();
 
+        	this->tracks_[t]->getMeasurementLikelihood(this->detections_.col(m));
+
         	// Use the distance between measurement and measurement prediction
         	double dist = (measPrediction - this->detections_.col(m)).norm();
 
-        	costMatrix(t, m) = std::min(1000,((int) (50 / dist) * 100) / 100);
+        	//costMatrix(t, m) = std::min(1000,((int) (50 / dist) * 200) / 100);
+        	costMatrix(t, m) = (int) (this->tracks_[t]->getMeasurementLikelihood(this->detections_.col(m)) * 100000);
         	//costMatrix(t, m) = (int) (sigmoid(dist,1,0.5)*1000);
+
         }
     }
 
@@ -179,7 +183,7 @@ bool Hypothesis::solveCostMatrix(){
     //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
 
     // TODO depend this on the number of measurements
-    int k = 3;
+    int k = 1;
     solutions = murty(-costMatrix,k);
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
@@ -421,109 +425,101 @@ bool Hypothesis::createChildren(){
 						 this->getParentProbabilility();
 
 	  //std::cout << RED << childProb << RESET << std::endl;
+
+
+	  // Calculate the child Hypothesis
 	  childProbs[solCounter] = childProb;
 
-	  all_assignments.push_back(assignments);
+    // Ratio pruning
+    if(childProb > 0.0){
+
+      // Print the assignments
+      //std::cout << std::endl << "Assignments:" << std::endl;
+      for(std::vector<TrackAssignment>::iterator assIt = assignments.begin(); assIt != assignments.end(); assIt++){
+        assIt->print();
+      }
+      //std::cout << std::endl << "Assignments done" << std::endl;
+
+      // Create child
+      HypothesisPtr childHypothesis(new Hypothesis(cycle_+1));
+      childHypothesis->setParentProbability(this->probability_);
+      childHypothesis->setRootCycle(this->getRootCycle());
+      childHypothesis->setParentTime(this->time_);
+
+      for(std::vector<TrackAssignment>::iterator assIt = assignments.begin(); assIt != assignments.end(); assIt++){
+
+        // New track
+        if(assIt->isNew())
+        {
+          TrackPtr newTrack(new Track(this->detections_.col(assIt->meas_), this->time_));
+          childHypothesis->addTrack(newTrack);
+          //std::cout << "    A New track for child " << i << " at " << std::endl << this->detections_.col(assIt->meas_) << std::endl;
+
+          tracksCreatedCounter++;
+        }
+
+        // Detection
+        if(assIt->isDetection())
+        {
+          TrackPtr copyTrack(new Track( *(assIt->getTrack()) ));
+          childHypothesis->addTrack(copyTrack);
+          //std::cout << assIt->getTrack()->getId() << " =>copy  " << copyTrack->getId() << std::endl;
+
+          //std::cout << "Update of track " << copyTrack->getId() << std::endl;
+          //std::cout << assIt->getTrack()->getMeasurementPrediction() << std::endl;
+          //std::cout << copyTrack->getMeasurementPrediction() << std::endl;
+          copyTrack->update(this->detections_.col(assIt->meas_), this->time_);
+          // TODO, apply measurement !!! After!! making the copy!
+        }
+
+
+        // OCCLUDED
+        if(assIt->isOcclusion())
+        {
+          // TODO
+        }
+
+
+        // FALSEALARM
+        if(assIt->isFalseAlarm())
+        {
+          // TODO
+        }
+
+
+        // DELETED
+        if(assIt->isDeletion())
+        {
+          // TODO
+        }
+
+
+
+      }
+
+      this->children_.push_back(childHypothesis);
+      //this->globalHypothesisTree_->addHypothesis(childHypothesis);
+
+    }
+
 
 	  solCounter++;
 
 	}
 
 	double probSum = childProbs.sum();
+
 	// Normalize the children probabilities
-	for(size_t i = 0; i < childProbs.rows(); i++)
-		childProbs[i] = childProbs[i]/probSum;
+	for(size_t i = 0; i < childProbs.rows(); i++){
+	  this->children_[i]->setProbability((double) childProbs[i]/probSum);
+	}
+
+
+	// Do a ratio pruning
 
 	//std::cout << childProbs << std::endl;
 
 	double maxProb = childProbs.maxCoeff();
-
-	// Create the children, one for each solution
-	for(size_t i = 0; i < solutions.size(); i++){
-
-		// Ratio pruning
-		if(childProbs[i]/maxProb > 0.1){
-
-			// Print the assignments
-			//std::cout << std::endl << "Assignments:" << std::endl;
-			for(std::vector<TrackAssignment>::iterator assIt = all_assignments[i].begin(); assIt != all_assignments[i].end(); assIt++){
-				//assIt->print();
-			}
-			//std::cout << std::endl << "Assignments done" << std::endl;
-
-			// Create child
-			HypothesisPtr childHypothesis(new Hypothesis(cycle_+1));
-			childHypothesis->setParentProbability(this->probability_);
-			childHypothesis->setRootCycle(this->getRootCycle());
-			childHypothesis->setParentTime(this->time_);
-			childHypothesis->setProbability(childProbs[i]);
-
-			// Iterate the assignments
-			std::vector<TrackAssignment> assignments = all_assignments[i];
-			for(std::vector<TrackAssignment>::iterator assIt = assignments.begin(); assIt != assignments.end(); assIt++){
-
-				// New track
-				if(assIt->isNew())
-				{
-					TrackPtr newTrack(new Track(this->detections_.col(assIt->meas_), this->time_));
-					childHypothesis->addTrack(newTrack);
-					//std::cout << "    A New track for child " << i << " at " << std::endl << this->detections_.col(assIt->meas_) << std::endl;
-
-					tracksCreatedCounter++;
-				}
-
-				// Detection
-				if(assIt->isDetection())
-				{
-					TrackPtr copyTrack(new Track( *(assIt->getTrack()) ));
-					childHypothesis->addTrack(copyTrack);
-					//std::cout << assIt->getTrack()->getId() << " =>copy  " << copyTrack->getId() << std::endl;
-
-					//std::cout << "Update of track " << copyTrack->getId() << std::endl;
-					//std::cout << assIt->getTrack()->getMeasurementPrediction() << std::endl;
-					//std::cout << copyTrack->getMeasurementPrediction() << std::endl;
-					copyTrack->update(this->detections_.col(assIt->meas_), this->time_);
-					// TODO, apply measurement !!! After!! making the copy!
-				}
-
-
-				// OCCLUDED
-				if(assIt->isOcclusion())
-				{
-					// TODO
-				}
-
-
-				// FALSEALARM
-				if(assIt->isFalseAlarm())
-				{
-					// TODO
-				}
-
-
-				// DELETED
-				if(assIt->isDeletion())
-				{
-					// TODO
-				}
-
-
-
-			}
-
-			this->children_.push_back(childHypothesis);
-			//this->globalHypothesisTree_->addHypothesis(childHypothesis);
-
-		}
-
-	}
-
-	//std::cout << this->children_.size() << " children were created" << std::endl;
-
-
-	//std::cout << "childProbs" << std::endl << childProbs << std::endl;
-
-
 
 	return true;
 }

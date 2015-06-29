@@ -52,9 +52,6 @@ public:
 	std::vector<Eigen::Vector4d> estimated_states_;
 
 
-
-
-
 public:
 	Track(Eigen::Vector2d initialPos, ros::Time time);
 	Track(const Track &obj);
@@ -79,6 +76,8 @@ public:
 	void setApproved();
 
 	void unApprove();
+
+	double getMeasurementLikelihood(Eigen::Vector2d meas);
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_TRACK_H_ */
