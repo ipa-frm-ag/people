@@ -14,7 +14,8 @@ Track::Track(Eigen::Vector2d initialPos, ros::Time initialTime):
 	lastPredictTime_(initialTime_),
 	state_(Track::FREE),
 	id_(trackIdCounter++),
-	is_approved_(false)
+	is_approved_(false),
+	is_occluded(false)
 {
 	estimated_states_.push_back(kalmanFilter_.getEstimation());
 	estimation_times_.push_back(initialTime);
@@ -34,7 +35,8 @@ Track::Track(const Track &obj):
 	id_(trackIdCounter++),
 	estimation_times_(obj.estimation_times_),
 	estimated_states_(obj.estimated_states_),
-	is_approved_(obj.is_approved_)
+	is_approved_(obj.is_approved_),
+	is_occluded_(obj.is_occluded_)
 {
     //std::cout << "Constructing copy of the track with id" << this->getId() << std::endl;
 
@@ -63,6 +65,8 @@ void Track::update(Eigen::Vector2d meas, ros::Time time){
 	this->estimation_times_.push_back(time);
 	this->estimated_states_.push_back(kalmanFilter_.getEstimation());
 
+	this->is_occluded_ = false;
+
 	ROS_ASSERT(this->lastUpdateTime_ == this->lastPredictTime_); // Both times should be equal
 }
 
@@ -86,5 +90,17 @@ void Track::unApprove(){
 }
 
 double Track::getMeasurementLikelihood(Eigen::Vector2d meas){
-  return kalmanFilter_.getMeasurementLikelihood(meas);
+
+  double l = kalmanFilter_.getMeasurementLikelihood(meas);
+  //std::cout << "Getting Likelihood for Track[" << this->getId() << "  " << l << std::endl;
+  return l;
+}
+
+void Track::setOccluded(ros::Time time){
+  this->is_occluded_ = true;
+
+  this->lastPredictTime_ = time;
+  this->estimation_times_.push_back(time);
+  this->estimated_states_.push_back(kalmanFilter_.getPrediction());
+
 }

@@ -141,9 +141,11 @@ double KalmanFilter::getMeasurementLikelihood(Eigen::Vector2d meas){
 
   double likelihood = 1.0/nominator * exp(exponent);
 
-  std::cout << "dist " << likelihood << std::endl;
+  //std::cout << "dist " << likelihood << std::endl;
 
-  std::cout << "S_k_" << S_k_ << std::endl;
+  //std::cout << "S_k_" << S_k_ << std::endl;
+
+
 
   return likelihood;
 

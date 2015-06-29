@@ -58,7 +58,7 @@ bool Hypothesis::assignMeasurements(int cycle, Eigen::Matrix<double,2,-1> detect
 		// Done
 		return true;
 	}
-	//std::cout << "To a hypothesis in cycle " << BOLDRED << cycle_ << RESET <<" new measurements are assigned" << std::endl;
+	std::cout << "To a hypothesis in cycle " << BOLDRED << cycle_ << RESET <<  "  "  << detectionsMat.cols() << " new measurements are assigned" << std::endl;
 
 	// Set the time
 	this->time_ = time;
@@ -129,22 +129,24 @@ bool Hypothesis::createCostMatrix(){
     // Fill the false alarms
     costMatrix.block(getNumberOfTracks()+numberOfMeasurements_,0,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,this->falseAlarmCostValue_);
 
-    // Fill the Deletions
-    costMatrix.block(0,numberOfMeasurements_,numberOfTracks,getNumberOfTracks()).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfTracks,1,this->deletionCostValue_);
+    // Fill the Occlusion
+    costMatrix.block(0,numberOfMeasurements_,numberOfTracks,getNumberOfTracks()).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfTracks,1,this->occlusionCostValue_);
 
-    // Fill the Occlusions
-    costMatrix.block(0,numberOfMeasurements_+getNumberOfTracks(),getNumberOfTracks(),getNumberOfTracks()).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(getNumberOfTracks(),1,this->occlusionCostValue_);
+    // Fill the Deletions
+    costMatrix.block(0,numberOfMeasurements_+getNumberOfTracks(),getNumberOfTracks(),getNumberOfTracks()).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(getNumberOfTracks(),1,this->deletionCostValue_);
 
     costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*getNumberOfTracks()) = Eigen::Matrix< int, -1, -1>::Constant(2*numberOfMeasurements_,2*numberOfTracks,-1000);
     if(getNumberOfTracks() > numberOfMeasurements_){
-    	costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfMeasurements_,1,0);
+    	costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfMeasurements_,1,-999);
+
+
     }
     else{
 
     	costMatrix.block(numberOfTracks,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,-1000);
     	costMatrix.block(numberOfTracks+numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,-1000);
 
-    	costMatrix.block(numberOfTracks,numberOfMeasurements_,2*numberOfTracks,2*numberOfTracks).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfTracks,1,0);
+    	costMatrix.block(numberOfTracks,numberOfMeasurements_,2*numberOfTracks,2*numberOfTracks).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfTracks,1,-999);
     }
 
     // Fill the validated measurements (using mahalanobis distance)
@@ -195,8 +197,6 @@ bool Hypothesis::solveCostMatrix(){
       //std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
     //}
 
-
-
     return true;
 }
 
@@ -240,7 +240,7 @@ bool Hypothesis::stdCoutSolutions(){
         	  if(assignmentMatrix(r,c) == 0) continue;
 
         	  // Check if this value is on one of the four diagonals
-        	  std::cout << "TRACK " << r << " --> DETECTED (MEAS " << c  << ")" << std::endl;
+        	  // std::cout << "TRACK " << r << " --> DETECTED (MEAS " << c  << ")" << std::endl;
         	  N_det_F++;
           }
       }
@@ -476,7 +476,15 @@ bool Hypothesis::createChildren(){
         // OCCLUDED
         if(assIt->isOcclusion())
         {
-          // TODO
+          TrackPtr copyTrack(new Track( *(assIt->getTrack()) ));
+          childHypothesis->addTrack(copyTrack);
+          copyTrack->setOccluded(this->time_);
+          //std::cout << assIt->getTrack()->getId() << " =>copy  " << copyTrack->getId() << std::endl;
+
+          //std::cout << "Update of track " << copyTrack->getId() << std::endl;
+          //std::cout << assIt->getTrack()->getMeasurementPrediction() << std::endl;
+          //std::cout << copyTrack->getMeasurementPrediction() << std::endl;
+          //copyTrack->update(this->detections_.col(assIt->meas_), this->time_);
         }
 
 

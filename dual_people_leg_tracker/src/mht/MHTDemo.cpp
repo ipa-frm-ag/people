@@ -23,13 +23,13 @@ int main(int argc, char **argv)
 
 	// Time settings
 	double dt = 0.08; // Timestep
-	double duration = 1.4;
+	double duration = 0.25;
 
 	ros::Time time(0);
 
 	// Number of objects
 	const int N = 3;
-	const int NMeas = 3;
+	int NMeasInit = 3;
 
 	// Initialize the objects
 	Eigen::Matrix<double,4,N> objects;
@@ -68,10 +68,10 @@ int main(int argc, char **argv)
 	z = H_*x;
 
 	// Create detections Mat
-	Eigen::Matrix<double,2, NMeas> detectionsMat;
-	detectionsMat = Eigen::Matrix<double,2, NMeas>::Zero(2,NMeas);
+	Eigen::Matrix<double,2, -1> detectionsMat;
+	detectionsMat = Eigen::Matrix<double,2, -1>::Zero(2,NMeasInit);
 
-	for(size_t i = 0; i < NMeas; i++){
+	for(size_t i = 0; i < NMeasInit; i++){
 		detectionsMat.col(i) = H_ * objects.col(i);
 	}
 
@@ -111,10 +111,20 @@ int main(int argc, char **argv)
 		for(int i = 0; i < N; i++){
 			objects.col(i) = A_ * objects.col(i) + Q_*Eigen::Vector4d::Random();
 		}
-		// Measure
-		for(size_t i = 0; i < NMeas; i++){
-			detectionsMat.col(i) = H_ * objects.col(i);
+
+		if(t==0.16){
+		  detectionsMat.resize(2,2);
+		  detectionsMat.col(0) = H_ * objects.col(0);
+		  detectionsMat.col(1) = H_ * objects.col(1);
+		}else{
+	    // Measure
+	    for(size_t i = 0; i < NMeasInit; i++){
+	      detectionsMat.resize(2,NMeasInit);
+	      detectionsMat.col(i) = H_ * objects.col(i);
+	    }
 		}
+
+
 
 
 		rootHypothesis->assignMeasurements(cycle_, detectionsMat, time);
