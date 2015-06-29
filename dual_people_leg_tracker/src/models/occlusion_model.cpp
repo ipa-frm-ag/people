@@ -58,5 +58,7 @@ double OcclusionModel::getOcclusionProbability(tf::Stamped<tf::Point> point){
 
   }
 
+  return 0.0;
+
 }
 
