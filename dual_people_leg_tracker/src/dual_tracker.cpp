@@ -31,6 +31,8 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
+
+#undef NDEBUG
 #include <ros/ros.h>
 
 // Own includes
@@ -709,8 +711,8 @@ public:
     //std::cout << "propagated.size() " << propagated.size() << std::endl;
     //std::cout << "probabilities.rows() " << probabilities.rows() << std::endl;
 
-    ROS_ASSERT(propagated.size() == probabilities.rows());
-    ROS_ASSERT(detections.size() == probabilities.cols());
+    //ROS_ASSERT(propagated.size() == probabilities.rows());
+    //ROS_ASSERT(detections.size() == probabilities.cols());
 
     for(int j = 0; j < probabilities.cols(); j++){
       for(int i = 0; i < probabilities.rows(); i++){
@@ -970,9 +972,6 @@ public:
     unsigned int matchesCounter = 0;
 
 
-
-    assert(false);
-
     // Iterate through all detections
     for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
         detectionIt != detections.end();
@@ -1006,10 +1005,6 @@ public:
       {
         std::cout << "Meas. Prob." << (*detectionIt)->cluster_->probability_ << std::endl;
         std::cout << "#########################################################################################################" << std::endl;
-        ROS_ASSERT(false);
-
-
-        assert(false);
 
         if(cluster->getProbability( )> new_track_min_probability_){
           loc.setZ(0); // TODO ugly fix
@@ -2521,73 +2516,6 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
 int main(int argc, char **argv)
 {
-  // Boost generator
-  typedef boost::mt19937 RNGType;
-  RNGType rng;
-  boost::uniform_int<> dist( 0, 9999);
-  boost::variate_generator< RNGType, boost::uniform_int<> >rand_gen(rng, dist);
-
-
-
-  // Let's imagine you need to assign N people to N jobs.  Additionally, each person will make
-  // your company a certain amount of money at each job, but each person has different skills
-  // so they are better at some jobs and worse at others.  You would like to find the best way
-  // to assign people to these jobs.  In particular, you would like to maximize the amount of
-  // money the group makes as a whole.  This is an example of an assignment problem and is
-  // what is solved by the max_cost_assignment() routine.
-  //
-  // So in this example, let's imagine we have 3 people and 3 jobs.  We represent the amount of
-  // money each person will produce at each job with a cost matrix.  Each row corresponds to a
-  // person and each column corresponds to a job.  So for example, below we are saying that
-  // person 0 will make $1 at job 0, $2 at job 1, and $6 at job 2.
-  unsigned int N = 20;
-  dlib::matrix<unsigned long> cost(N,N);
-
-
-
-  for (unsigned int i = 0; i < N*N; i++){
-    unsigned long random_value = rand_gen();
-    cost(i) = random_value;
-
-
-  }
-
-  benchmarking::Timer assignmentProblemSolverTimer; assignmentProblemSolverTimer.start();
-
-  // To find out the best assignment of people to jobs we just need to call this function.
-  std::vector<long> assignment = dlib::max_cost_assignment(cost);
-
-  assignmentProblemSolverTimer.stop();
-
-  // Print the cost matrix
-  std::cout << "COST MATRIX" << std::endl;
-  for (unsigned int i = 0; i < N*N; i++){
-    int row = i/N;
-    int col = i % N;
-
-    // Newline
-    if(i % N == 0) std::cout << std::endl;
-
-    // Highlight the match
-    if(assignment[row] == col) std::cout << BOLDYELLOW;
-
-    // Print the value
-    std::cout << std::setw(4) << cost(i) << " " << RESET;
-
-
-  }
-  std::cout << std::endl;
-
-  std::cout << "optimal cost: " << dlib::assignment_cost(cost, assignment) << std::endl;
-  std::cout << "This took " << assignmentProblemSolverTimer.getElapsedTimeMs() << " ms" << std::endl;
-
-  // EIGEN Tests
-  Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> possibleAssignments;
-  possibleAssignments.resize(5,2);
-  possibleAssignments = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(5,2);
-
-  possibleAssignments.col(0).setZero();
-
 
   ros::init(argc, argv, "dual_tracker");
   g_argc = argc;
