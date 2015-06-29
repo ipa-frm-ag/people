@@ -22,11 +22,11 @@ const long double prob_fal = 0.003;
 
 
 Hypothesis::Hypothesis(int cycle):
-	newTrackCostValue_(15),
-	falseAlarmCostValue_(5),
-	deletionCostValue_(10),
-	occlusionCostValue_(40),
-	invalidValue_(-9000),
+	newTrackCostValue_(150),
+	falseAlarmCostValue_(100),
+	deletionCostValue_(700),
+	occlusionCostValue_(800),
+	invalidValue_(-9999),
 	probability_(1.0),
 	cycle_(cycle),
 	root_cycle_(0),
@@ -62,7 +62,7 @@ bool Hypothesis::assignMeasurements(int cycle, Eigen::Matrix<double,2,-1> detect
 		// Done
 		return true;
 	}
-	std::cout << "To a hypothesis in cycle " << BOLDRED << cycle_ << RESET <<  "  "  << detectionsMat.cols() << " new measurements are assigned" << std::endl;
+	//std::cout << "To a hypothesis in cycle " << BOLDRED << cycle_ << RESET <<  "  "  << detectionsMat.cols() << " new measurements are assigned" << std::endl;
 
 	// Set the time
 	this->time_ = time;
@@ -166,14 +166,21 @@ bool Hypothesis::createCostMatrix(){
         	double dist = (measPrediction - this->detections_.col(m)).norm();
 
         	//costMatrix(t, m) = std::min(1000,((int) (50 / dist) * 200) / 100);
-        	costMatrix(t, m) = (int) (this->tracks_[t]->getMeasurementLikelihood(this->detections_.col(m)) * 100000);
+        	costMatrix(t, m) = (int) (this->tracks_[t]->getMeasurementLikelihood(this->detections_.col(m)) * 1000000);
         	//costMatrix(t, m) = (int) (sigmoid(dist,1,0.5)*1000);
 
         }
     }
 
+    // Twerk the deletion
+    for(unsigned int t=0; t < numberOfTracks; t++){
+    	int costAddition = this->tracks_[t]->timeOccludedSeconds(this->time_)*99;
+    	std::cout << BOLDWHITE << "Increasing the deletion costs " << costAddition << RESET << std::endl;
+    	costMatrix(0+t,numberOfMeasurements_+getNumberOfTracks()+t) += costAddition;
+    }
+
     // Print the cost matrix
-    if(numberOfTracks > 0)
+    //if(numberOfTracks > 0)
     //std::cout << "The cost matrix is now " << std::endl << costMatrix << std::endl;
 
     // StdCout the implications of this
@@ -189,7 +196,7 @@ bool Hypothesis::solveCostMatrix(){
     //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
 
     // TODO depend this on the number of measurements
-    int k = 3;
+    int k = 1;
     solutions = murty(-costMatrix,k);
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
@@ -332,7 +339,7 @@ bool Hypothesis::createChildren(){
 	// Iterate the solutions
 	size_t solCounter = 0;
 	for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
-	  std::cout << "-------Solution--------" << solCounter << std::endl;
+	  //std::cout << "-------Solution--------" << solCounter << std::endl;
 
 	  // Get the assignment matrix
 	  Eigen::Matrix<int, -1, -1> assignmentMatrix = solIt->assignmentMatrix;
@@ -427,7 +434,7 @@ bool Hypothesis::createChildren(){
 //      std::cout << "N_new = " << N_new << std::endl;
 //      std::cout << "N_false = " << N_false << std::endl;
 
-      std::cout << "prob" << pow(prob_new, N_new) << std::endl;
+      //std::cout << "prob" << pow(prob_new, N_new) << std::endl;
 	  // Calulate the
 	  double childProb_part1 = 1; // Needs to be calculated on updated trackers
 	  double childProb_part2 = pow(prob_detected_free,    N_det_F) *
@@ -485,7 +492,7 @@ bool Hypothesis::createChildren(){
           copyTrack->update(this->detections_.col(assIt->meas_), this->time_);
 
           double measurementLikelihood = copyTrack->getMeasurementLikelihood(this->detections_.col(assIt->meas_));
-          std::cout << "The likelihood of the track " << copyTrack->getId() << " is " << measurementLikelihood << std::endl;
+          //std::cout << "The likelihood of the track " << copyTrack->getId() << " is " << measurementLikelihood << std::endl;
 
           childProb_part1 = childProb_part1*measurementLikelihood;
           // TODO, apply measurement !!! After!! making the copy!
@@ -526,7 +533,7 @@ bool Hypothesis::createChildren(){
 
 
 	  // Calculate the child Hypothesis
-      std::cout << "Probability of DetectedTracks:" << childProb_part1 << "  probability of other stuff " << childProb_part2 << std::endl;
+      //std::cout << "Probability of DetectedTracks:" << childProb_part1 << "  probability of other stuff " << childProb_part2 << std::endl;
 	  childProbs[solCounter] = childProb_part1 * childProb_part2;
       this->children_.push_back(childHypothesis);
       //this->globalHypothesisTree_->addHypothesis(childHypothesis);
@@ -543,7 +550,7 @@ bool Hypothesis::createChildren(){
 	// Normalize the children probabilities
 	for(size_t i = 0; i < childProbs.rows(); i++){
 		long double childProb = (double) childProbs[i]/probSum;
-	  std::cout << "setting prob of Hypothesis" << this->children_[i]->getId() << " to " << childProb << std::endl;
+	  //std::cout << "setting prob of Hypothesis" << this->children_[i]->getId() << " to " << childProb << std::endl;
 	  this->children_[i]->setProbability(childProb);
 	}
 
@@ -638,8 +645,6 @@ void Hypothesis::setProbability(double probabilty){
 }
 
 HypothesisPtr Hypothesis::getMostLikelyHypothesis(int cycle){
-	std::cout << "Getting most likely Hypothesis of cycle " << cycle << " this hypothesis has cycle " << this->cycle_ << std::endl;
-
 
 	// Iterate the children
 	HypothesisPtr mostlikelyHypothesis;
@@ -662,9 +667,7 @@ HypothesisPtr Hypothesis::getMostLikelyHypothesis(int cycle){
 	// If your on top ask your children to give you your most likely hypothesis
 	else
 	{
-		std::cout << "  > Iterating the " << this->children_.size() << " children of Hyp[" << this->getId() << "]"  << std::endl;
 		for(size_t i = 0; i<this->children_.size(); i++){
-			std::cout << "iterating child" << std::endl;
 			long double childProb = this->children_[i]->getProbability();
 			if(childProb > maxProb){
 				maxProb = childProb;
@@ -677,8 +680,6 @@ HypothesisPtr Hypothesis::getMostLikelyHypothesis(int cycle){
 }
 
 HypothesisPtr Hypothesis::getMostLikelyHypothesisCumulative(int cycle){
-	std::cout << "Getting most likely Hypothesis of cycle " << cycle << " this hypothesis has cycle " << this->cycle_ << std::endl;
-
 
 	// Iterate the children
 	HypothesisPtr mostlikelyHypothesis;

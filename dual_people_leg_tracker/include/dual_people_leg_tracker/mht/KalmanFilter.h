@@ -31,6 +31,8 @@ public:
 
 	Eigen::Matrix<double,2,2> S_k_; // Residual Covariance
 
+	Eigen::Matrix<double,2,2> S_k_temp_; // For the measurement likelihood
+
 	Eigen::Matrix<double,4,1> initial_state_; // The current State
 
 	Eigen::Matrix<double,4,1> state_predicted_; // The current State

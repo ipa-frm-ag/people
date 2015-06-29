@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 	// Time settings
 	double dt = 0.08; // Timestep
-	double duration = 0.18;
+	double duration = 1;
 
 	ros::Time time(0);
 
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	Eigen::Matrix<double,4,N> objects;
 	objects = Eigen::Matrix<double,4,-1>::Zero(4,N);
 	objects.row(0) << 0, 5, 10;
-	objects.row(2) << 0, 6, 0;
+	objects.row(2) << 0, 2, 0;
 	objects.row(3) << 0.5, 1, 4;
 
 	std::cout << "objects" << std::endl << objects << std::endl;
@@ -44,8 +44,8 @@ int main(int argc, char **argv)
 	Eigen::Matrix<double,4,4> A_; // Transition Matrix
 
 	Eigen::Matrix<double,4,4> Q_; // System Noise
-	double posNoise = 0.2;
-	double velNoise = 2;
+	double posNoise = 0.02;
+	double velNoise = 0.4;
 	Q_ <<    posNoise, 0,        0,        0,
 		     0,        posNoise, 0,        0,
 			 0,        0,        velNoise, 0,
@@ -110,6 +110,7 @@ int main(int argc, char **argv)
 		// Move
 		for(int i = 0; i < N; i++){
 			objects.col(i) = A_ * objects.col(i) + Q_*Eigen::Vector4d::Random();
+			objects(0,0) += objects(0,0) * sin(t*20);
 		}
 
 		if(t==0.16){
@@ -129,13 +130,13 @@ int main(int argc, char **argv)
 
 		rootHypothesis->assignMeasurements(cycle_, detectionsMat, time);
     	//rootHypothesis->print();
-		//rootHypothesis->coutCurrentSolutions(cycle_);
+		rootHypothesis->coutCurrentSolutions(cycle_);
 
-		std::cout << "first call on get most likely" << std::endl;
+		//std::cout << "first call on get most likely" << std::endl;
 		HypothesisPtr mostlikelyHypothesis = rootHypothesis->getMostLikelyHypothesis(cycle_+1);
 		HypothesisPtr mostCumLikelyHypothesis = rootHypothesis->getMostLikelyHypothesisCumulative(cycle_+1);
-		std::cout << BOLDGREEN << "Most likely hypothesis for cycle " << cycle_ << " has id " << mostlikelyHypothesis->getId() << RESET << std::endl;
-		std::cout << BOLDGREEN << "Most cumulative likeli in cycle" << cycle_ << " is " << mostCumLikelyHypothesis->getId() << RESET << std::endl;
+		//std::cout << BOLDGREEN << "Most likely hypothesis for cycle " << cycle_ << " has id " << mostlikelyHypothesis->getId() << RESET << std::endl;
+		//std::cout << BOLDGREEN << "Most cumulative likeli in cycle" << cycle_ << " is " << mostCumLikelyHypothesis->getId() << RESET << std::endl;
 
 		//rootHypothesis->printTracks(cycle_+1);
 
@@ -190,7 +191,7 @@ int main(int argc, char **argv)
 
 	}
 
-	rootHypothesis->print();
+	//rootHypothesis->print();
 
 	std::vector<TrackPtr> allTracks;
 	rootHypothesis->getTracks(allTracks, cycle_+1);

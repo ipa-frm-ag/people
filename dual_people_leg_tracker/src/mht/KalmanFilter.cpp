@@ -44,6 +44,7 @@ KalmanFilter::KalmanFilter(Eigen::Matrix<double,2,1> initialState) {
 	R_ = Eigen::Matrix<double,-1,-1>::Identity(2,2)*0.01;
 
 	S_k_ = Eigen::Matrix<double,2,2>::Identity(2,2);
+	S_k_temp_ = Eigen::Matrix<double,2,2>::Identity(2,2);
 
 
 //	std::cout << "A Kalman filter was created, current state " << std::endl << state_estimated_ <<  std::endl;
@@ -120,7 +121,6 @@ void KalmanFilter::update(Eigen::Matrix<double,2,1> z_k){
 	//std::cout << state_predicted_.transpose() << "  -->Update   " << state_estimated_.transpose() << std::endl;
 }
 
-
 Eigen::Matrix<double,4,1> KalmanFilter::getPrediction(){
 	return this->state_predicted_;
 }
@@ -135,10 +135,12 @@ Eigen::Matrix<double,2,1> KalmanFilter::getMeasurementPrediction(){
 
 double KalmanFilter::getMeasurementLikelihood(Eigen::Vector2d meas){
 
+  S_k_temp_ = H_ * P_prior_ * H_.transpose() + R_;
+
   Eigen::Vector2d distance = measurement_prediction_ - meas;
 
-  double nominator = sqrt(2 * M_PI * 2 * M_PI * S_k_.determinant());
-  double exponent = -0.5 * distance.transpose() * S_k_.inverse() * distance;
+  double nominator = sqrt(2 * M_PI * 2 * M_PI * S_k_temp_.determinant());
+  double exponent = -0.5 * distance.transpose() * S_k_temp_.inverse() * distance;
 
   double likelihood = 1.0/nominator * exp(exponent);
 

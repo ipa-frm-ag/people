@@ -42,6 +42,8 @@ private:
 	ros::Time lastPredictTime_; // Time the last prediction was made against
 	ros::Time lastUpdateTime_; // Time towards the last update was done
 
+	ros::Time initial_occlusion_time_; // Time since when this is occluded
+
 	mht::KalmanFilter kalmanFilter_; // The Kalman Filter
 
 	std::vector<ros::Time> estimation_times_; // The update and prediction times
@@ -84,6 +86,8 @@ public:
 	double getMeasurementLikelihood(Eigen::Vector2d meas);
 
 	void setOccluded(ros::Time time);
+
+	double timeOccludedSeconds(ros::Time time);
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_TRACK_H_ */
