@@ -120,6 +120,7 @@ void KalmanFilter::update(Eigen::Matrix<double,2,1> z_k){
 	//std::cout << state_predicted_.transpose() << "  -->Update   " << state_estimated_.transpose() << std::endl;
 }
 
+
 Eigen::Matrix<double,4,1> KalmanFilter::getPrediction(){
 	return this->state_predicted_;
 }

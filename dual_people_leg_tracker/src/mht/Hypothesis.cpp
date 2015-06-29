@@ -31,7 +31,8 @@ Hypothesis::Hypothesis(int cycle):
 	cycle_(cycle),
 	root_cycle_(0),
 	dt_(0.0),
-	id_(hypothesisIdCounter++)
+	id_(hypothesisIdCounter++),
+	is_on_most_likely_branch_(false)
 {
 	//std::cout << "New Hypothesis create for cycle " << cycle << std::endl;
 }
@@ -46,6 +47,9 @@ unsigned int Hypothesis::getNumberOfTracks(){
 }
 
 bool Hypothesis::assignMeasurements(int cycle, Eigen::Matrix<double,2,-1> detectionsMat, ros::Time time){
+
+	// Reset all flags
+	this->recursiveResetAllFlags();
 
 	// Recursive call if this is not the right generation
 	if(cycle > this->cycle_){
@@ -185,7 +189,7 @@ bool Hypothesis::solveCostMatrix(){
     //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
 
     // TODO depend this on the number of measurements
-    int k = 1;
+    int k = 3;
     solutions = murty(-costMatrix,k);
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
@@ -289,6 +293,8 @@ bool Hypothesis::stdCoutSolutions(){
     	  // std::cout << "TRACK " << i << " --> DELETED" << std::endl;
       }
 
+      std::cout << "N_new = " << N_new << std::endl;
+
       double childProb = pow(prob_detected_free,    N_det_F) *
     		  	  	  	 pow(prob_occluded_free,    N_occ_F) *
 						 pow(prob_deleted_free,     N_del_F) *
@@ -326,6 +332,7 @@ bool Hypothesis::createChildren(){
 	// Iterate the solutions
 	size_t solCounter = 0;
 	for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
+	  std::cout << "-------Solution--------" << solCounter << std::endl;
 
 	  // Get the assignment matrix
 	  Eigen::Matrix<int, -1, -1> assignmentMatrix = solIt->assignmentMatrix;
@@ -411,27 +418,34 @@ bool Hypothesis::createChildren(){
 		  assignment.setDeletion(this->tracks_[i]);
 		  assignments.push_back(assignment);
 	  }
+//      std::cout << "N_det_F = " << N_det_F << std::endl;
+//      std::cout << "N_occ_F = " << N_occ_F << std::endl;
+//      std::cout << "N_del_F = " << N_del_F << std::endl;
+//      std::cout << "N_det_A = " << N_det_A << std::endl;
+//      std::cout << "N_occ_A = " << N_occ_A << std::endl;
+//      std::cout << "N_del_A = " << N_del_A << std::endl;
+//      std::cout << "N_new = " << N_new << std::endl;
+//      std::cout << "N_false = " << N_false << std::endl;
 
+      std::cout << "prob" << pow(prob_new, N_new) << std::endl;
+	  // Calulate the
+	  double childProb_part1 = 1; // Needs to be calculated on updated trackers
+	  double childProb_part2 = pow(prob_detected_free,    N_det_F) *
+						 	   pow(prob_occluded_free,    N_occ_F) *
+						       pow(prob_deleted_free,     N_del_F) *
+						       pow(prob_detected_approved,N_det_A) *
+						       pow(prob_occluded_approved,N_occ_A) *
+						       pow(prob_deleted_approved, N_del_A) *
+						       pow(prob_new, N_new) *
+						       pow(prob_fal, N_false) *
+						       this->getParentProbabilility();
 
-
-	  double childProb = pow(prob_detected_free,    N_det_F) *
-						 pow(prob_occluded_free,    N_occ_F) *
-						 pow(prob_deleted_free,     N_del_F) *
-						 pow(prob_detected_approved,N_det_A) *
-						 pow(prob_occluded_approved,N_occ_A) *
-						 pow(prob_deleted_approved, N_del_A) *
-						 pow(prob_new, N_new) *
-						 pow(prob_new, N_false) *
-						 this->getParentProbabilility();
+	  // std::cout << "childProb_part2 " << childProb_part2 << std::endl;
 
 	  //std::cout << RED << childProb << RESET << std::endl;
 
 
-	  // Calculate the child Hypothesis
-	  childProbs[solCounter] = childProb;
 
-    // Ratio pruning
-    if(childProb > 0.0){
 
       // Print the assignments
       //std::cout << std::endl << "Assignments:" << std::endl;
@@ -469,6 +483,11 @@ bool Hypothesis::createChildren(){
           //std::cout << assIt->getTrack()->getMeasurementPrediction() << std::endl;
           //std::cout << copyTrack->getMeasurementPrediction() << std::endl;
           copyTrack->update(this->detections_.col(assIt->meas_), this->time_);
+
+          double measurementLikelihood = copyTrack->getMeasurementLikelihood(this->detections_.col(assIt->meas_));
+          std::cout << "The likelihood of the track " << copyTrack->getId() << " is " << measurementLikelihood << std::endl;
+
+          childProb_part1 = childProb_part1*measurementLikelihood;
           // TODO, apply measurement !!! After!! making the copy!
         }
 
@@ -505,10 +524,14 @@ bool Hypothesis::createChildren(){
 
       }
 
+
+	  // Calculate the child Hypothesis
+      std::cout << "Probability of DetectedTracks:" << childProb_part1 << "  probability of other stuff " << childProb_part2 << std::endl;
+	  childProbs[solCounter] = childProb_part1 * childProb_part2;
       this->children_.push_back(childHypothesis);
       //this->globalHypothesisTree_->addHypothesis(childHypothesis);
 
-    }
+
 
 
 	  solCounter++;
@@ -519,8 +542,9 @@ bool Hypothesis::createChildren(){
 
 	// Normalize the children probabilities
 	for(size_t i = 0; i < childProbs.rows(); i++){
-	  std::cout << "setting prob of Hypothesis" << this->children_[i]->getId() << std::endl;
-	  this->children_[i]->setProbability((double) childProbs[i]/probSum);
+		long double childProb = (double) childProbs[i]/probSum;
+	  std::cout << "setting prob of Hypothesis" << this->children_[i]->getId() << " to " << childProb << std::endl;
+	  this->children_[i]->setProbability(childProb);
 	}
 
 
@@ -557,7 +581,9 @@ void Hypothesis::print(){
 	for(int i=0; i < nTabs; i++){
 		std::cout << "  ";
 	}
-	std::cout << "->HYP[ID:" << getId() << " prob:" << RED << this->probability_ << RESET << " cyc: " << getCycle() << " nCh: " << this->children_.size() << " nT: " << getNumberOfTracks() << " dt:" << this->dt_ << "]" << std::endl;
+	if(is_on_most_likely_branch_) std::cout << YELLOW;
+	std::cout << "->HYP[ID:" << getId() << " prob:" << RED << this->probability_ << RESET << " cyc: " << getCycle() << " nCh: " << this->children_.size() << " cumLi:" << getCumulativeLikelihood() << " nT: " << getNumberOfTracks() << " dt:" << this->dt_ << "]" << std::endl;
+	if(is_on_most_likely_branch_) std::cout << RESET;
 	for(std::vector<HypothesisPtr>::iterator hypoIt = this->children_.begin(); hypoIt != this->children_.end(); hypoIt++){
 		(*hypoIt)->print();
 	}
@@ -648,4 +674,81 @@ HypothesisPtr Hypothesis::getMostLikelyHypothesis(int cycle){
 	}
 
 	return mostlikelyHypothesis;
+}
+
+HypothesisPtr Hypothesis::getMostLikelyHypothesisCumulative(int cycle){
+	std::cout << "Getting most likely Hypothesis of cycle " << cycle << " this hypothesis has cycle " << this->cycle_ << std::endl;
+
+
+	// Iterate the children
+	HypothesisPtr mostlikelyHypothesis;
+	long double maxProb = 0;
+
+	//If the next cycle is the requested cycle
+	if(cycle-1 > this->cycle_){
+		HypothesisPtr tempHypothesis;
+
+		for(size_t i = 0; i<this->children_.size(); i++){
+			tempHypothesis = this->children_[i]->getMostLikelyHypothesis(cycle);
+			long double childProb = tempHypothesis->getCumulativeLikelihood();
+			if(childProb > maxProb){
+				maxProb = childProb;
+				mostlikelyHypothesis = tempHypothesis;
+			}
+		}
+	}
+
+	// If your on top ask your children to give you your most likely hypothesis
+	else
+	{
+		std::cout << "  > Iterating the " << this->children_.size() << " children of Hyp[" << this->getId() << "]"  << std::endl;
+		for(size_t i = 0; i<this->children_.size(); i++){
+			std::cout << "iterating child" << std::endl;
+			long double childProb = this->children_[i]->getCumulativeLikelihood();
+			if(childProb > maxProb){
+				maxProb = childProb;
+				mostlikelyHypothesis = this->children_[i];
+			}
+		}
+	}
+
+	if(this->cycle_ == this->root_cycle_){
+		recursiveRaiseFlagOnCumulativePath(mostlikelyHypothesis->getId());
+	}
+
+	return mostlikelyHypothesis;
+}
+
+long double Hypothesis::getCumulativeLikelihood(){
+	return getParentProbabilility() * getProbability();
+}
+
+bool Hypothesis::hasChildWithID(int id){
+	if(getId() == id) return true;
+
+	for(size_t i = 0; i<this->children_.size(); i++){
+		if(this->children_[i]->hasChildWithID(id)) return true;
+	}
+
+	return false;
+}
+
+void Hypothesis::recursiveRaiseFlagOnCumulativePath(int id){
+
+	for(size_t i = 0; i<this->children_.size(); i++){
+		if(this->children_[i]->hasChildWithID(id)){
+			this->is_on_most_likely_branch_ = true;
+			this->children_[i]->recursiveRaiseFlagOnCumulativePath(id);
+		}
+
+	}
+}
+
+bool Hypothesis::recursiveResetAllFlags(){
+	this->is_on_most_likely_branch_ = false;
+
+	for(size_t i = 0; i<this->children_.size(); i++){
+		this->children_[i]->recursiveResetAllFlags();
+	}
+
 }

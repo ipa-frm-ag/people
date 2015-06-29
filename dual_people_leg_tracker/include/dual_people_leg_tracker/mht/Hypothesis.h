@@ -63,7 +63,7 @@ private:
     double dt_;				// [s] Time difference to parent, needed for prediction
     ros::Time parent_time_;		// Time of the parent
 
-
+    bool is_on_most_likely_branch_;
 
     std::vector<TrackPtr> tracks_;
 
@@ -165,6 +165,22 @@ public:
 
 	// Get the best hypothesis for cycle
 	HypothesisPtr getMostLikelyHypothesis(int cycle);
+
+	// Get the best hypothesis for cycle
+	HypothesisPtr getMostLikelyHypothesisCumulative(int cycle);
+
+	// Get the cumulative likelihood
+	long double getCumulativeLikelihood();
+
+	// Check if this has a child with a certain ID;
+	bool hasChildWithID(int id);
+
+	// Raise the on cumulative flag
+	void recursiveRaiseFlagOnCumulativePath(int id);
+
+	// Reset all flags
+	bool recursiveResetAllFlags();
+
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_HYPOTHESIS_H_ */

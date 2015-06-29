@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 	// Time settings
 	double dt = 0.08; // Timestep
-	double duration = 0.25;
+	double duration = 0.18;
 
 	ros::Time time(0);
 
@@ -132,9 +132,12 @@ int main(int argc, char **argv)
 		//rootHypothesis->coutCurrentSolutions(cycle_);
 
 		std::cout << "first call on get most likely" << std::endl;
-		HypothesisPtr mostlikelyHypothesis = rootHypothesis->getMostLikelyHypothesis(cycle_);
-		std::cout << "Most likely hypothesis for cycle " << cycle_ << " has id " << mostlikelyHypothesis->getId() << std::endl;
-    	//rootHypothesis->printTracks(cycle_+1);
+		HypothesisPtr mostlikelyHypothesis = rootHypothesis->getMostLikelyHypothesis(cycle_+1);
+		HypothesisPtr mostCumLikelyHypothesis = rootHypothesis->getMostLikelyHypothesisCumulative(cycle_+1);
+		std::cout << BOLDGREEN << "Most likely hypothesis for cycle " << cycle_ << " has id " << mostlikelyHypothesis->getId() << RESET << std::endl;
+		std::cout << BOLDGREEN << "Most cumulative likeli in cycle" << cycle_ << " is " << mostCumLikelyHypothesis->getId() << RESET << std::endl;
+
+		//rootHypothesis->printTracks(cycle_+1);
 
 
 
@@ -171,7 +174,7 @@ int main(int argc, char **argv)
 //		kalmanFilter.predict(dt);
 //		kalmanFilter.update(z);
 
-		//////////////////////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////////////////////
 		// GNUPLOT
 		obj0Points.push_back(std::make_pair(objects(0,0), objects(1,0)));
 		obj1Points.push_back(std::make_pair(objects(0,1), objects(1,1)));
