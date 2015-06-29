@@ -519,6 +519,7 @@ bool Hypothesis::createChildren(){
 
 	// Normalize the children probabilities
 	for(size_t i = 0; i < childProbs.rows(); i++){
+	  std::cout << "setting prob of Hypothesis" << this->children_[i]->getId() << std::endl;
 	  this->children_[i]->setProbability((double) childProbs[i]/probSum);
 	}
 
@@ -608,4 +609,43 @@ void Hypothesis::setParentTime(ros::Time time){
 
 void Hypothesis::setProbability(double probabilty){
 	this->probability_ = probabilty;
+}
+
+HypothesisPtr Hypothesis::getMostLikelyHypothesis(int cycle){
+	std::cout << "Getting most likely Hypothesis of cycle " << cycle << " this hypothesis has cycle " << this->cycle_ << std::endl;
+
+
+	// Iterate the children
+	HypothesisPtr mostlikelyHypothesis;
+	long double maxProb = 0;
+
+	//If the next cycle is the requested cycle
+	if(cycle-1 > this->cycle_){
+		HypothesisPtr tempHypothesis;
+
+		for(size_t i = 0; i<this->children_.size(); i++){
+			tempHypothesis = this->children_[i]->getMostLikelyHypothesis(cycle);
+			long double childProb = tempHypothesis->getProbability();
+			if(childProb > maxProb){
+				maxProb = childProb;
+				mostlikelyHypothesis = tempHypothesis;
+			}
+		}
+	}
+
+	// If your on top ask your children to give you your most likely hypothesis
+	else
+	{
+		std::cout << "  > Iterating the " << this->children_.size() << " children of Hyp[" << this->getId() << "]"  << std::endl;
+		for(size_t i = 0; i<this->children_.size(); i++){
+			std::cout << "iterating child" << std::endl;
+			long double childProb = this->children_[i]->getProbability();
+			if(childProb > maxProb){
+				maxProb = childProb;
+				mostlikelyHypothesis = this->children_[i];
+			}
+		}
+	}
+
+	return mostlikelyHypothesis;
 }

@@ -129,7 +129,11 @@ int main(int argc, char **argv)
 
 		rootHypothesis->assignMeasurements(cycle_, detectionsMat, time);
     	//rootHypothesis->print();
-    rootHypothesis->coutCurrentSolutions(cycle_);
+		//rootHypothesis->coutCurrentSolutions(cycle_);
+
+		std::cout << "first call on get most likely" << std::endl;
+		HypothesisPtr mostlikelyHypothesis = rootHypothesis->getMostLikelyHypothesis(cycle_);
+		std::cout << "Most likely hypothesis for cycle " << cycle_ << " has id " << mostlikelyHypothesis->getId() << std::endl;
     	//rootHypothesis->printTracks(cycle_+1);
 
 

@@ -92,11 +92,11 @@ public:
 	 */
 	unsigned int getNumberOfTracks();
 
-	long double getProbability(){
-		return this->getProbability();
+	long double getProbability() const{
+		return probability_;
 	}
 
-	long double getParentProbabilility(){
+	long double getParentProbabilility() const{
 		return this->parent_probability_;
 	}
 
@@ -122,7 +122,7 @@ public:
 	void addTrack(TrackPtr track);
 
 	// Get the cycle
-	const int getCycle(){
+	const int getCycle() const{
 		return this->cycle_;
 	}
 
@@ -162,6 +162,9 @@ public:
 
 	// Set the probability
 	void setProbability(double probabilty);
+
+	// Get the best hypothesis for cycle
+	HypothesisPtr getMostLikelyHypothesis(int cycle);
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_HYPOTHESIS_H_ */
