@@ -31,17 +31,17 @@ KalmanFilter::KalmanFilter(Eigen::Matrix<double,2,1> initialState) {
 	H_ << 1, 0, 0, 0,
 		  0, 1, 0,  0;
 
-	P_post_ <<  0.01, 0, 0, 0,
-			    0, 0.01, 0, 0,
-				0, 0, 1, 0,
-				0, 0, 0, 1;
+	P_post_ <<  2, 0, 0, 0,
+			        0, 2, 0, 0,
+			        0, 0, 4, 0,
+			        0, 0, 0, 4;
 	P_prior_  = P_post_;
 
 	// Process Covariance
-	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*0.01;
+	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*1;
 
 	// Measurement Covariance
-	R_ = Eigen::Matrix<double,-1,-1>::Identity(2,2)*0.001;
+	R_ = Eigen::Matrix<double,-1,-1>::Identity(2,2)*0.01;
 
 
 
@@ -49,8 +49,8 @@ KalmanFilter::KalmanFilter(Eigen::Matrix<double,2,1> initialState) {
 //	std::cout << "System is " << std::endl << A_ <<  std::endl;
 //	std::cout << "Meas is " << std::endl << H_ <<  std::endl;
 //	std::cout << "P_prior_ is " << std::endl << P_prior_ <<  std::endl;
-std::cout << "Q_ is " << std::endl << Q_ <<  std::endl;
-std::cout << "R_ is " << std::endl << R_ <<  std::endl;
+//  std::cout << "Q_ is " << std::endl << Q_ <<  std::endl;
+//  std::cout << "R_ is " << std::endl << R_ <<  std::endl;
 
 }
 
@@ -88,11 +88,11 @@ void KalmanFilter::predict(double dt){
 	P_prior_ = A_dt * P_post_ * A_dt.transpose() + Q_;
 
 	//std::cout << "state_"  << std::endl << state_ << std::endl;
-	std::cout << "state_estimated " << state_estimated_.transpose() << "  -- prediction(" << dt <<  "s) -->  " << state_predicted_.transpose() << std::endl;
+	// std::cout << "state_estimated " << state_estimated_.transpose() << "  -- prediction(" << dt <<  "s) -->  " << state_predicted_.transpose() << std::endl;
 }
 
 void KalmanFilter::update(Eigen::Matrix<double,2,1> z_k){
-	std::cout << "Kalman Filter was updated with " << z_k.transpose() << std::endl;
+	//std::cout << "Kalman Filter was updated with " << z_k.transpose() << std::endl;
 
 
 
@@ -114,7 +114,7 @@ void KalmanFilter::update(Eigen::Matrix<double,2,1> z_k){
 	Eigen::Matrix<double,4,4> I = Eigen::Matrix<double,4,4>::Identity();
 	P_post_ = (I - K_k * H_) + P_prior_;
 
-	std::cout << state_predicted_.transpose() << "  -->Update   " << state_estimated_.transpose() << std::endl;
+	//std::cout << state_predicted_.transpose() << "  -->Update   " << state_estimated_.transpose() << std::endl;
 }
 
 Eigen::Matrix<double,4,1> KalmanFilter::getPrediction(){

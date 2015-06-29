@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 	// Time settings
 	double dt = 0.08; // Timestep
-	double duration = 0.60;
+	double duration = 0.20;
 
 	ros::Time time(0);
 
@@ -35,7 +35,8 @@ int main(int argc, char **argv)
 	Eigen::Matrix<double,4,N> objects;
 	objects = Eigen::Matrix<double,4,-1>::Zero(4,N);
 	objects.row(0) << 0, 5, 10;
-	objects.row(3) << 0.5, 1, 1.5;
+	objects.row(2) << 0, 6, 0;
+	objects.row(3) << 0.5, 1, 4;
 
 	std::cout << "objects" << std::endl << objects << std::endl;
 
@@ -44,7 +45,7 @@ int main(int argc, char **argv)
 
 	Eigen::Matrix<double,4,4> Q_; // System Noise
 	double posNoise = 0.2;
-	double velNoise = 0.3;
+	double velNoise = 1;
 	Q_ <<    posNoise, 0,        0,        0,
 		     0,        posNoise, 0,        0,
 			 0,        0,        velNoise, 0,
@@ -117,14 +118,14 @@ int main(int argc, char **argv)
 
 
 		rootHypothesis->assignMeasurements(cycle_, detectionsMat, time);
-    	rootHypothesis->print();
-    	rootHypothesis->coutCurrentSolutions(cycle_);
-    	rootHypothesis->printTracks(cycle_+1);
+    	//rootHypothesis->print();
+    	//rootHypothesis->coutCurrentSolutions(cycle_);
+    	//rootHypothesis->printTracks(cycle_+1);
 
 
 
 
-		std::cout << "objects" << std::endl << objects << std::endl;
+		//std::cout << "objects" << std::endl << objects << std::endl;
 
 
 
@@ -162,7 +163,7 @@ int main(int argc, char **argv)
 		obj1Points.push_back(std::make_pair(objects(0,1), objects(1,1)));
 		obj2Points.push_back(std::make_pair(objects(0,2), objects(1,2)));
 
-		gp << "set xrange [-1:12]\nset yrange [-0.1:1]\n";
+		gp << "set xrange [-1:12]\nset yrange [-0.1:4]\n";
 		gp << "plot" << gp.file1d(obj0Points) << " with linespoints title 'obj0',"
 				     << gp.file1d(obj1Points) << " with linespoints title 'obj1',"
 					 << gp.file1d(obj2Points) << " with linespoints title 'obj2'"<< std::endl;
@@ -171,6 +172,8 @@ int main(int argc, char **argv)
 		/////////////////////////////////////////////////////////////////////////
 
 	}
+
+	rootHypothesis->print();
 
 	std::vector<TrackPtr> allTracks;
 	rootHypothesis->getTracks(allTracks, cycle_+1);

@@ -44,6 +44,8 @@ private:
 
 	std::vector<ros::Time> estimation_times_; // The update and prediction times
 
+  bool is_approved_; // Flag if this track is approved
+
 public:
 	Eigen::Vector2d initialPos_;
 
@@ -72,7 +74,11 @@ public:
 
 	void print();
 
+	bool isApproved() const { return this->is_approved_; };
 
+	void setApproved();
+
+	void unApprove();
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_TRACK_H_ */

@@ -13,15 +13,16 @@ Track::Track(Eigen::Vector2d initialPos, ros::Time initialTime):
 	initialTime_(initialTime),
 	lastPredictTime_(initialTime_),
 	state_(Track::FREE),
-	id_(trackIdCounter++)
+	id_(trackIdCounter++),
+	is_approved_(false)
 {
 	estimated_states_.push_back(kalmanFilter_.getEstimation());
 	estimation_times_.push_back(initialTime);
-	std::cout << "A new track with id " << getId() << " was created at " << this->initialPos_ << std::endl;
+	//std::cout << "A new track with id " << getId() << " was created at " << this->initialPos_ << std::endl;
 }
 
 Track::~Track() {
-	std::cout << "Track removed" << std::endl;
+	//std::cout << "Track removed" << std::endl;
 }
 
 Track::Track(const Track &obj):
@@ -32,9 +33,10 @@ Track::Track(const Track &obj):
 	state_(obj.state_),
 	id_(trackIdCounter++),
 	estimation_times_(obj.estimation_times_),
-	estimated_states_(obj.estimated_states_)
+	estimated_states_(obj.estimated_states_),
+	is_approved_(obj.is_approved_)
 {
-    std::cout << "Constructing copy of the track with id" << this->getId() << std::endl;
+    //std::cout << "Constructing copy of the track with id" << this->getId() << std::endl;
 
 }
 
@@ -73,4 +75,12 @@ void Track::print(){
 	for(size_t i = 0; i < this->estimated_states_.size(); i++){
 		std::cout << "  " << this->estimated_states_[i].transpose() << std::endl;
 	}
+}
+
+void Track::setApproved(){
+  this->is_approved_ = true;
+}
+
+void Track::unApprove(){
+  this->is_approved_ = false;
 }
