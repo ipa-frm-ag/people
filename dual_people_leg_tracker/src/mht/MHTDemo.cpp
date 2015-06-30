@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 	// Time settings
 	double dt = 0.08; // Timestep
-	double duration = 0.40;
+	double duration = 0.20;
 
 	ros::Time time(0);
 
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 	objects.row(2) << 0, 0, 0;
 
 	// Y Vel
-	objects.row(3) << 2, 0.25, 0.25;
+	objects.row(3) << 0.1, 0.25, 0.25;
 
 	std::cout << "objects" << std::endl << objects << std::endl;
 
@@ -50,15 +50,15 @@ int main(int argc, char **argv)
 	Eigen::Matrix<double,4,4> A_; // Transition Matrix
 
 	Eigen::Matrix<double,4,4> Q_; // System Noise
-	double posNoise = 0.01;
-	double velNoise = 0.02;
+	double posNoise = 0.0;
+	double velNoise = 0.0;
 	Q_ <<    posNoise, 0,        0,        0,
 		     0,        posNoise, 0,        0,
 			 0,        0,        velNoise, 0,
 			 0,        0,        0,        velNoise;
 
   Eigen::Matrix<double,2,2> R_; // System Noise
-  double measNoise = 0.01;
+  double measNoise = 0.0;
   R_ <<    measNoise, 0,
          0,        measNoise;
 
@@ -125,26 +125,28 @@ int main(int argc, char **argv)
 			objects(0,0) += objects(0,0) * sin(t*8)*0.1;
 		}
 
-		if(t==0.16){
+		if(t==0.8){
 		  detectionsMat.resize(2,2);
 		  detectionsMat.col(0) = H_ * objects.col(0);
 		  detectionsMat.col(1) = H_ * objects.col(1);
 		}else{
 	    // Measure
 	    for(size_t i = 0; i < NMeasInit; i++){
-	      detectionsMat.resize(2,NMeasInit+1);
+	      detectionsMat.resize(2,NMeasInit);
 	      detectionsMat.col(i) = H_ * objects.col(i) + R_*Eigen::Vector2d::Random();
 	    }
 
-	    detectionsMat.col(NMeasInit) = Eigen::Vector2d::Random();
+	    //detectionsMat.col(NMeasInit) = Eigen::Vector2d::Random();
 		}
+
+		std::cout << "detectionsMat" << detectionsMat << std::endl;
 
 
 
 		// Here the new children are generated
 		rootHypothesis->assignMeasurements(cycle_, detectionsMat, time);
 
-    rootHypothesis->print();
+    //rootHypothesis->print();
 		rootHypothesis->coutCurrentSolutions(cycle_);
 
 		//std::cout << "first call on get most likely" << std::endl;

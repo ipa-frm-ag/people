@@ -40,10 +40,10 @@ private:
 	int id_;
 
 	// CostValues
-	int newTrackCostValue_;
-	int falseAlarmCostValue_;
-	int deletionCostValue_;
-	int occlusionCostValue_;
+	double newTrackCostValue_;
+	double falseAlarmCostValue_;
+	double deletionCostValue_;
+	double occlusionCostValue_;
 
 	int invalidValue_;
 

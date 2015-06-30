@@ -25,7 +25,7 @@ Track::Track(Eigen::Vector2d initialPos, ros::Time initialTime):
 }
 
 Track::~Track() {
-  std::cout << MAGENTA << "Track[" << getId() << "] is deleted" << RESET << std::endl;
+  //std::cout << MAGENTA << "Track[" << getId() << "] is deleted" << RESET << std::endl;
 }
 
 Track::Track(const Track &obj):
