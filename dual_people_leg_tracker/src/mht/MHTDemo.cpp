@@ -127,10 +127,11 @@ int main(int argc, char **argv)
 
 
 
-
+		// Here the new children are generated
 		rootHypothesis->assignMeasurements(cycle_, detectionsMat, time);
-    	//rootHypothesis->print();
-		rootHypothesis->coutCurrentSolutions(cycle_);
+
+    rootHypothesis->print();
+		//rootHypothesis->coutCurrentSolutions(cycle_);
 
 		//std::cout << "first call on get most likely" << std::endl;
 		HypothesisPtr mostlikelyHypothesis = rootHypothesis->getMostLikelyHypothesis(cycle_+1);
@@ -138,6 +139,11 @@ int main(int argc, char **argv)
 		//std::cout << BOLDGREEN << "Most likely hypothesis for cycle " << cycle_ << " has id " << mostlikelyHypothesis->getId() << RESET << std::endl;
 		//std::cout << BOLDGREEN << "Most cumulative likeli in cycle" << cycle_ << " is " << mostCumLikelyHypothesis->getId() << RESET << std::endl;
 
+		HypothesisPtr newRoot;
+		if(rootHypothesis->getNewRootByPruning(newRoot,cycle_,4)){
+		  rootHypothesis = newRoot;
+		}
+		  std::cout << BOLDRED << "Successful pruning!" << std::endl;
 		//rootHypothesis->printTracks(cycle_+1);
 
 

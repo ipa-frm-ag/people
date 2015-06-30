@@ -181,6 +181,15 @@ public:
 	// Reset all flags
 	bool recursiveResetAllFlags();
 
+	bool getNewRootByPruning(HypothesisPtr &newRoot, int cycle, int N);
+
+	// get ChildProbSum
+	long double getChildProbSum(int cycle);
+
+	void recursiveRootCycleUpdate(int cycle);
+
+	int getDepth(){ return this->cycle_ - this->root_cycle_; };
+
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_HYPOTHESIS_H_ */

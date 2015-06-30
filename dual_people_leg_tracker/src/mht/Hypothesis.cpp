@@ -39,7 +39,7 @@ Hypothesis::Hypothesis(int cycle):
 
 Hypothesis::~Hypothesis() {
 	// TODO Auto-generated destructor stub
-
+  std::cout << MAGENTA << "Hypo[" << getId() << "] is deleted" << std::endl;
 }
 
 unsigned int Hypothesis::getNumberOfTracks(){
@@ -196,7 +196,7 @@ bool Hypothesis::createCostMatrix(){
     // Twerk the deletion
     for(unsigned int t=0; t < numberOfTracks; t++){
     	int costAddition = this->tracks_[t]->timeOccludedSeconds(this->time_)*99;
-    	std::cout << BOLDWHITE << "Increasing the deletion costs " << costAddition << RESET << std::endl;
+    	//std::cout << BOLDWHITE << "Increasing the deletion costs " << costAddition << RESET << std::endl;
     	costMatrix(0+t,numberOfMeasurements_+getNumberOfTracks()+t) += costAddition;
     }
 
@@ -494,7 +494,7 @@ bool Hypothesis::createChildren(){
       // Print the assignments
       //std::cout << std::endl << "Assignments:" << std::endl;
       for(std::vector<TrackAssignment>::iterator assIt = assignments.begin(); assIt != assignments.end(); assIt++){
-        assIt->print();
+        //assIt->print();
       }
       //std::cout << std::endl << "Assignments done" << std::endl;
 
@@ -626,7 +626,7 @@ void Hypothesis::print(){
 		std::cout << "  ";
 	}
 	if(is_on_most_likely_branch_) std::cout << YELLOW;
-	std::cout << "->HYP[ID:" << getId() << " prob:" << RED << this->probability_ << RESET << " cyc: " << getCycle() << " nCh: " << this->children_.size() << " cumLi:" << getCumulativeLikelihood() << " nT: " << getNumberOfTracks() << " dt:" << this->dt_ << "]" << std::endl;
+	std::cout << "->HYP[ID:" << getId() << " prob:" << RED << this->probability_ << RESET << " cyc: " << getCycle() << " nCh: " << this->children_.size() << " cumLi:" << getCumulativeLikelihood() << " nT: " << getNumberOfTracks() << " dt:" << this->dt_ << " depth:" << this->getDepth() << "]" << std::endl;
 	if(is_on_most_likely_branch_) std::cout << RESET;
 	for(std::vector<HypothesisPtr>::iterator hypoIt = this->children_.begin(); hypoIt != this->children_.end(); hypoIt++){
 		(*hypoIt)->print();
@@ -790,3 +790,66 @@ bool Hypothesis::recursiveResetAllFlags(){
 	}
 
 }
+
+bool Hypothesis::getNewRootByPruning(HypothesisPtr &newRoot,int cycle, int N){
+  std::cout << "Hypo[" << getId() << "] is doing pruning" << std::endl;
+  if(cycle - this->root_cycle_< N){
+    std::cout << "Not deep enough for ratio pruning!!!!" << std::endl;
+    return false;
+  }
+
+  // Do ratio pruning
+  double maxChildProbSum = 0;
+  double bestChildIdx;
+  for(size_t i = 0; i<this->children_.size(); i++){
+    long double prob = this->children_[i]->getChildProbSum(this->root_cycle_ + N);
+
+    if(prob > maxChildProbSum){
+      maxChildProbSum = prob;
+      bestChildIdx = i;
+    }
+  }
+
+  newRoot = this->children_[bestChildIdx];
+  std::cout << "Hypo[" << getId() << "] is doing pruning --> New Root Hypo[" << newRoot->getId() << "]" << std::endl;
+
+  newRoot->setRootCycle(newRoot->cycle_);
+
+  return true;
+}
+
+long double Hypothesis::getChildProbSum(int cycle){
+  // If the children are at the considered cycle
+  long double Sum = 0;
+  if(this->cycle_+1== cycle){
+
+    for(size_t i = 0; i<this->children_.size(); i++){
+      Sum += this->children_[i]->getProbability();
+    }
+
+  }
+  // If not there yet -> go deeper
+  else{
+    long double Sum = 0;
+    for(size_t i = 0; i<this->children_.size(); i++){
+      Sum += this->children_[i]->getChildProbSum(cycle);
+    }
+  }
+
+  return Sum;
+}
+
+void Hypothesis::recursiveRootCycleUpdate(int cycle){
+  std::cout << "Hypo[" << this->getId() << "] set root cycle to" << cycle << std::endl;
+
+  // If the children are at the considered cycle
+  this->root_cycle_ = cycle;
+
+  for(size_t i = 0; i<this->children_.size(); i++){
+    this->children_[i]->recursiveRootCycleUpdate(cycle);
+  }
+
+}
+
+
+
