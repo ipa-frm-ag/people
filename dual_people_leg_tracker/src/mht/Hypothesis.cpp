@@ -7,6 +7,7 @@
 
 #include <dual_people_leg_tracker/mht/Hypothesis.h>
 #include <dual_people_leg_tracker/mht/HypothesisTree.h>
+#include <dual_people_leg_tracker/visualization/color_definitions.h>
 #include <algorithm>
 
 // Parameters (from Paper)
@@ -39,7 +40,7 @@ Hypothesis::Hypothesis(int cycle):
 
 Hypothesis::~Hypothesis() {
 	// TODO Auto-generated destructor stub
-  std::cout << MAGENTA << "Hypo[" << getId() << "] is deleted" << std::endl;
+  std::cout << MAGENTA << "Hypo[" << getId() << "] is deleted" << RESET << std::endl;
 }
 
 unsigned int Hypothesis::getNumberOfTracks(){
@@ -218,7 +219,7 @@ bool Hypothesis::solveCostMatrix(){
 
     // TODO depend this on the number of measurements
     int k_pre = 15;
-    int k = 2;
+    int k = 3;
 
     std::vector<Solution> pre;
     pre = murty(-costMatrix,k_pre);
@@ -436,7 +437,7 @@ bool Hypothesis::createChildren(){
 		  N_false++;
 
 		  TrackAssignment assignment;
-		  assignment.isFalseAlarm();
+		  assignment.setFalseAlarm(i);
 		  assignments.push_back(assignment);
 	  }
 
@@ -493,9 +494,12 @@ bool Hypothesis::createChildren(){
 
       // Print the assignments
       //std::cout << std::endl << "Assignments:" << std::endl;
+	    std::cout << WHITE << "------------------" << std::endl;
       for(std::vector<TrackAssignment>::iterator assIt = assignments.begin(); assIt != assignments.end(); assIt++){
-        //assIt->print();
+        assIt->print();
+
       }
+      std::cout << WHITE << "------------------" << std::endl;
       //std::cout << std::endl << "Assignments done" << std::endl;
 
       // Create child

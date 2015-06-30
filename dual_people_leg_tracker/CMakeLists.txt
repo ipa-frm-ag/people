@@ -134,7 +134,7 @@ add_executable(MHTDemo
 add_dependencies(dual_tracker people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(dual_tracker dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES})
+target_link_libraries(dual_tracker dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES} boost_iostreams boost_system boost_filesystem)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(MHTDemo ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES} boost_iostreams boost_system boost_filesystem)

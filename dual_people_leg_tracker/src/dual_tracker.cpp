@@ -88,6 +88,8 @@
 // DLib include
 #include <dlib/optimization/max_cost_assignment.h>
 
+#include <libs/gnuplot-iostream/gnuplot-iostream.h>
+
 // Namespaces
 using namespace std;
 using namespace laser_processor;
@@ -244,6 +246,14 @@ public:
   tf::MessageFilter<people_msgs::PositionMeasurement> people_notifier_;
   tf::MessageFilter<sensor_msgs::LaserScan> laser_notifier_;
 
+  Gnuplot gp;
+
+  // Plotting helper
+  std::vector<std::pair<double, double> > obj0Points;
+  std::vector<std::pair<double, double> > obj1Points;
+  std::vector<std::pair<double, double> > obj2Points;
+
+
   DualTracker(ros::NodeHandle nh) :
     nh_(nh),
     mask_count_(0),
@@ -316,6 +326,8 @@ public:
     feature_id_ = 0;
 
     ROS_DEBUG("CREATED DUAL_TRACKER");
+
+    gp << "set xrange [-20:20]\nset yrange [-20:20]\n";
   }
 
 
@@ -612,6 +624,8 @@ public:
     	detectionsMat(1,i) = detections[i]->point_[1];
     }
 
+    std::cout << "Detections" << std::endl << detectionsMat << std::endl;
+
 
     ROS_DEBUG("%sMHT [Cycle %u]", BOLDWHITE, cycle_);
     benchmarking::Timer mhtTimer;
@@ -634,6 +648,20 @@ public:
     {
     	rootHypothesis->assignMeasurements(cycle_, detectionsMat, scan->header.stamp);
     	rootHypothesis->print();
+
+      //rootHypothesis->coutCurrentSolutions(cycle_);
+
+      //std::cout << "first call on get most likely" << std::endl;
+      HypothesisPtr mostlikelyHypothesis = rootHypothesis->getMostLikelyHypothesis(cycle_+1);
+      HypothesisPtr mostCumLikelyHypothesis = rootHypothesis->getMostLikelyHypothesisCumulative(cycle_+1);
+      //std::cout << BOLDGREEN << "Most likely hypothesis for cycle " << cycle_ << " has id " << mostlikelyHypothesis->getId() << RESET << std::endl;
+      //std::cout << BOLDGREEN << "Most cumulative likeli in cycle" << cycle_ << " is " << mostCumLikelyHypothesis->getId() << RESET << std::endl;
+
+      HypothesisPtr newRoot;
+      if(rootHypothesis->getNewRootByPruning(newRoot,cycle_,2)){
+        rootHypothesis = newRoot;
+      }
+        std::cout << BOLDRED << "Successful pruning!" << std::endl;
     	//rootHypothesis->coutCurrentSolutions(cycle_);
     }
 
@@ -641,6 +669,49 @@ public:
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - MHT",__func__);
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"DualTracker::%s - MHT took %f ms",__func__, mhtTimer.getElapsedTimeMs());
     //ROS_DEBUG("%MHT Done! [Cycle %u]", BOLDWHITE, cycle_);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // GNUPLOT
+    gp << "set xrange [-10:0]\nset yrange [-15:0]\n";
+    //gp << "set autoscale" << std::endl;
+    // Iterate detections
+    for(size_t i = 0; i < detectionsMat.cols(); i++){
+      obj0Points.push_back(std::make_pair(detectionsMat(0,i), detectionsMat(1,i)));
+    }
+
+    gp << "plot" << gp.file1d(obj0Points) << " with points title 'meas' pt 7 ps 1" << std::endl;
+
+    obj0Points.clear();
+
+    // Get all tracks
+    std::vector<TrackPtr> allTracks;
+    rootHypothesis->getTracks(allTracks, cycle_+1);
+
+
+    for(size_t i = 0; i < allTracks.size(); i++){
+
+      std::vector<std::pair<double, double> > track;
+
+      for(std::vector<Eigen::Vector4d>::iterator stateIt = allTracks[i]->estimated_states_.begin(); stateIt != allTracks[i]->estimated_states_.end(); stateIt++){
+        std::cout << "x:" << (*stateIt)[0] << " y:" << (*stateIt)[1] << std::endl;
+
+        track.push_back(std::make_pair((*stateIt)[0], (*stateIt)[1]));
+
+      }
+
+      if(i == 0)
+        gp << "plot";
+      else
+        gp << "replot";
+      gp << gp.file1d(track) << " with linespoints title 'meas' pt 7 ps 1" << std::endl;
+
+    }
+
+
+    //
+    /////////////////////////////////////////////////////////////////////////
+
+
 
     firstRun = false;
     ROS_ASSERT(cycle_ < 1);

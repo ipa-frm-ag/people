@@ -7,6 +7,8 @@
 
 #include <dual_people_leg_tracker/mht/Track.h>
 
+#include <dual_people_leg_tracker/visualization/color_definitions.h>
+
 Track::Track(Eigen::Vector2d initialPos, ros::Time initialTime):
 	initialPos_(initialPos),
 	kalmanFilter_(initialPos),
@@ -23,7 +25,7 @@ Track::Track(Eigen::Vector2d initialPos, ros::Time initialTime):
 }
 
 Track::~Track() {
-	//std::cout << "Track removed" << std::endl;
+  std::cout << MAGENTA << "Track[" << getId() << "] is deleted" << RESET << std::endl;
 }
 
 Track::Track(const Track &obj):

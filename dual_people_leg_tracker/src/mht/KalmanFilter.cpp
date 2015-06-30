@@ -29,19 +29,19 @@ KalmanFilter::KalmanFilter(Eigen::Matrix<double,2,1> initialState) {
 
 	// Define the measurement Matrix
 	H_ << 1, 0, 0, 0,
-		  0, 1, 0,  0;
+		    0, 1, 0,  0;
 
-	P_post_ <<  2, 0, 0, 0,
-			        0, 2, 0, 0,
-			        0, 0, 4, 0,
-			        0, 0, 0, 4;
+	P_post_ <<  1, 0, 0, 0,
+			        0, 1, 0, 0,
+			        0, 0, 2, 0,
+			        0, 0, 0, 2;
 	P_prior_  = P_post_;
 
 	// Process Covariance
-	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*1;
+	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*0.0000001;
 
 	// Measurement Covariance
-	R_ = Eigen::Matrix<double,-1,-1>::Identity(2,2)*0.01;
+	R_ = Eigen::Matrix<double,-1,-1>::Identity(2,2)*0.000001;
 
 	S_k_ = Eigen::Matrix<double,2,2>::Identity(2,2);
 	S_k_temp_ = Eigen::Matrix<double,2,2>::Identity(2,2);

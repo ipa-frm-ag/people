@@ -68,7 +68,7 @@ public:
 	}
 	void setFalseAlarm(int measIdx){
 		this->meas_ = measIdx;
-		this->is_deletion_ = true;
+		this->is_falsealarm_ = true;
 	}
 	void setOcclusion(TrackPtr track){
 		this->track_ = track;

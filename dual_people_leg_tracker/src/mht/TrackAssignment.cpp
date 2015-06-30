@@ -50,6 +50,8 @@ TrackAssignment::~TrackAssignment() {
 
 void TrackAssignment::print(){
 
+  std::cout << "print";
+
 	if(isDetection())
 		std::cout << "TRACK[" << getTrack()->getId() << "] is DETECTED BY MEAS[" << meas_ << "]" << std::endl;
 
