@@ -33,8 +33,6 @@ public:
 
 	STATE state_;
 
-	bool is_occluded;
-
 private:
 	int id_; // The id
 
@@ -48,9 +46,9 @@ private:
 
 	std::vector<ros::Time> estimation_times_; // The update and prediction times
 
-  bool is_approved_; // Flag if this track is approved
+	bool is_approved_; // Flag if this track is approved
 
-  bool is_occluded_;
+	bool is_occluded_;
 
 public:
 	Eigen::Vector2d initialPos_;
@@ -86,6 +84,10 @@ public:
 	double getMeasurementLikelihood(Eigen::Vector2d meas);
 
 	void setOccluded(ros::Time time);
+
+	bool isOccluded(){ return this->is_occluded_; };
+
+	void removeOccluded();
 
 	double timeOccludedSeconds(ros::Time time);
 };

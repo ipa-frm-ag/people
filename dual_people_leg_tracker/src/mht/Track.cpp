@@ -15,7 +15,7 @@ Track::Track(Eigen::Vector2d initialPos, ros::Time initialTime):
 	state_(Track::FREE),
 	id_(trackIdCounter++),
 	is_approved_(false),
-	is_occluded(false)
+	is_occluded_(false)
 {
 	estimated_states_.push_back(kalmanFilter_.getEstimation());
 	estimation_times_.push_back(initialTime);
@@ -97,7 +97,7 @@ double Track::getMeasurementLikelihood(Eigen::Vector2d meas){
 }
 
 void Track::setOccluded(ros::Time time){
-  if(!is_occluded)
+  if(!is_occluded_)
 	  this->initial_occlusion_time_ = time;
 
   this->is_occluded_ = true;
@@ -105,11 +105,16 @@ void Track::setOccluded(ros::Time time){
   this->lastPredictTime_ = time;
   this->estimation_times_.push_back(time);
   this->estimated_states_.push_back(kalmanFilter_.getPrediction());
-
 }
+
+void Track::removeOccluded(){
+  this->is_occluded_ = false;
+}
+
+
 double Track::timeOccludedSeconds(ros::Time now){
-	if(this->is_occluded){
-		std::cout << "Was occluded for " << (now-this->initial_occlusion_time_).toSec() << std::endl;
+	if(this->is_occluded_){
+		std::cout << "TRACK[" << getId() << "] occluded for " << (now-this->initial_occlusion_time_).toSec() << std::endl;
 		return (now-this->initial_occlusion_time_).toSec();
 	}
 	return 0;
