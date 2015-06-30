@@ -9,6 +9,10 @@
 
 #include <libs/gnuplot-iostream/gnuplot-iostream.h>
 
+
+#include <unistd.h>
+
+
 int main(int argc, char **argv)
 {
 
@@ -28,21 +32,21 @@ int main(int argc, char **argv)
 	ros::Time time(0);
 
 	// Number of objects
-	const int N = 3;
-	int NMeasInit = 3;
+	const int Nobjects = 6;
+	int NMeasInit = 6;
 
 	// Initialize the objects
-	Eigen::Matrix<double,4,N> objects;
-	objects = Eigen::Matrix<double,4,-1>::Zero(4,N);
+	Eigen::Matrix<double,4,Nobjects> objects;
+	objects = Eigen::Matrix<double,4,-1>::Zero(4,Nobjects);
 
 	// X pos
-	objects.row(0) << -1, 4, 6;
+	objects.row(0) << Eigen::VectorXd::LinSpaced(Eigen::Sequential,Nobjects,0,5);
 
 	// X Vel
 	objects.row(2) << 0, 0, 0;
 
 	// Y Vel
-	objects.row(3) << 0.3, 0.35, 0.25;
+	objects.row(3) <<  Eigen::VectorXd::Constant(Nobjects,1);
 
 	std::cout << "objects" << std::endl << objects << std::endl;
 
@@ -50,17 +54,17 @@ int main(int argc, char **argv)
 	Eigen::Matrix<double,4,4> A_; // Transition Matrix
 
 	Eigen::Matrix<double,4,4> Q_; // System Noise
-	double posNoise = 0.0;
-	double velNoise = 0.0;
+	double posNoise = 0.2;
+	double velNoise = 0.4;
 	Q_ <<    posNoise, 0,        0,        0,
-		     0,        posNoise, 0,        0,
-			 0,        0,        velNoise, 0,
-			 0,        0,        0,        velNoise;
+		       0,        posNoise, 0,        0,
+			     0,        0,        velNoise, 0,
+			     0,        0,        0,        velNoise;
 
   Eigen::Matrix<double,2,2> R_; // System Noise
   double measNoise = 0.01;
   R_ <<    measNoise, 0,
-         0,        measNoise;
+           0,         measNoise;
 
 	A_ = Eigen::Matrix<double,-1,-1>::Identity(4,4);
 	A_(0,2) = dt;
@@ -80,7 +84,7 @@ int main(int argc, char **argv)
 
 	// Create detections Mat
 	Eigen::Matrix<double,2, -1> detectionsMat;
-	detectionsMat = Eigen::Matrix<double,2, -1>::Zero(2,NMeasInit);
+	detectionsMat = Eigen::Matrix<double,2, -1>::Zero(2,NMeasInit+1);
 
 	for(size_t i = 0; i < NMeasInit; i++){
 		detectionsMat.col(i) = H_ * objects.col(i);
@@ -96,19 +100,8 @@ int main(int argc, char **argv)
 	rootHypothesis->assignMeasurements(cycle_, detectionsMat, time);
   rootHypothesis->coutCurrentSolutions(cycle_);
 
+	std::vector<std::pair<double, double> > objectsHistory[Nobjects];
 
-	// Plotting helper
-	std::vector<std::pair<double, double> > obj0Points;
-	std::vector<std::pair<double, double> > obj1Points;
-	std::vector<std::pair<double, double> > obj2Points;
-	// Set initial values
-	obj0Points.push_back(std::make_pair(objects(0,0), objects(1,0)));
-	obj1Points.push_back(std::make_pair(objects(0,1), objects(1,1)));
-	obj2Points.push_back(std::make_pair(objects(0,2), objects(1,2)));
-
-	std::vector<std::pair<double, double> > obj0Points_Est;
-	std::vector<std::pair<double, double> > obj1Points_Est;
-	std::vector<std::pair<double, double> > obj2Points_Est;
 
 
 	for(double t=0; t<duration; t=t+dt){
@@ -118,32 +111,19 @@ int main(int argc, char **argv)
 
 
 
-		std::cout << BOLDWHITE << time << " ----------------------------------------------------- " << cycle_ << RESET << std::endl;
+		//std::cout << BOLDWHITE << time << " ----------------------------------------------------- " << cycle_ << RESET << std::endl;
 		// Move
-		for(int i = 0; i < N; i++){
+		for(int i = 0; i < Nobjects; i++){
+      objectsHistory[i].push_back( std::pair<double,double>(objects(0,i), objects(1,i)));
 			objects.col(i) = A_ * objects.col(i) + Q_*Eigen::Vector4d::Random();
-			objects(0,0) += objects(0,0) * sin(t*8)*0.1;
 		}
 
-		if(t==0.08){
-		  detectionsMat.resize(2,2);
-		  detectionsMat.col(0) = H_ * objects.col(0);
-		  detectionsMat.col(1) = H_ * objects.col(1);
-		}else{
-	    // Measure
-	    for(size_t i = 0; i < NMeasInit; i++){
-	      detectionsMat.resize(2,NMeasInit);
-	      detectionsMat.col(i) = H_ * objects.col(i) + R_*Eigen::Vector2d::Random();
-	    }
+    for(int i = 0; i < Nobjects; i++){
+      detectionsMat.col(i) = H_ * objects.col(i);
+    }
+    detectionsMat.col(Nobjects) = Eigen::Vector2d::Random()*5;
 
-	    //detectionsMat.col(NMeasInit) = Eigen::Vector2d::Random();
-		}
-
-		if(t==0.24){
-		  detectionsMat.resize(2,4);
-		}
-
-		std::cout << "detectionsMat" << detectionsMat << std::endl;
+		//std::cout << "detectionsMat" << detectionsMat << std::endl;
 
 
 
@@ -160,10 +140,10 @@ int main(int argc, char **argv)
 		//std::cout << BOLDGREEN << "Most cumulative likeli in cycle" << cycle_ << " is " << mostCumLikelyHypothesis->getId() << RESET << std::endl;
 
 		HypothesisPtr newRoot;
-		if(rootHypothesis->getNewRootByPruning(newRoot,cycle_,2)){
+		if(rootHypothesis->getNewRootByPruning(newRoot,cycle_,3)){
 		  rootHypothesis = newRoot;
 		}
-		  std::cout << BOLDRED << "Successful pruning!" << std::endl;
+		  //std::cout << BOLDRED << "Successful pruning!" << std::endl;
 		//rootHypothesis->printTracks(cycle_+1);
 
 
@@ -200,56 +180,57 @@ int main(int argc, char **argv)
 //
 //		kalmanFilter.predict(dt);
 //		kalmanFilter.update(z);
+	  gp << "set xrange [-4:12]\nset yrange [-0.1:1.4]\n";
+	  for(size_t i = 0; i < Nobjects; i++){
+	    if(i == 0)
+	      gp << "plot";
+	    else
+	      gp << "replot";
+	    gp << gp.file1d(objectsHistory[i]) << " with linespoints title 'obj'"<< std::endl;
+	  }
 
-		///////////////////////////////////////////////////////////////////////////
-		// GNUPLOT
-		obj0Points.push_back(std::make_pair(objects(0,0), objects(1,0)));
-		obj1Points.push_back(std::make_pair(objects(0,1), objects(1,1)));
-		obj2Points.push_back(std::make_pair(objects(0,2), objects(1,2)));
+	  std::vector<TrackPtr> allTracks;
+	  rootHypothesis->getMostLikelyHypothesis(cycle_)->getTracks(allTracks, cycle_);
 
-		gp << "set xrange [-4:12]\nset yrange [-0.1:0.8]\n";
-		gp << "plot" << gp.file1d(obj0Points) << " with linespoints title 'obj0',"
-				     << gp.file1d(obj1Points) << " with linespoints title 'obj1',"
-					 << gp.file1d(obj2Points) << " with linespoints title 'obj2'"<< std::endl;
+	  std::cout << allTracks.size() << std::endl;
 
-		//
-		/////////////////////////////////////////////////////////////////////////
+	  for(size_t i = 0; i < allTracks.size(); i++){
+	    std::vector<std::pair<double, double> > track;
 
-	}
+	      std::cout << "Number of Tracks" << allTracks.size();
 
-	rootHypothesis->print();
+	      for(std::vector<Eigen::Vector4d>::iterator stateIt = allTracks[i]->estimated_states_.begin(); stateIt != allTracks[i]->estimated_states_.end(); stateIt++){
+	        std::cout << (*stateIt).transpose() << std::endl;
+	        track.push_back(std::pair<double,double>((*stateIt)[0], (*stateIt)[1]));
+	      }
+	      gp << "replot" << gp.file1d(track) << " with linespoints title 'est' pt 6 ps 2" << std::endl;
+	      //
 
-	std::vector<TrackPtr> allTracks;
-	rootHypothesis->getTracks(allTracks, cycle_+1);
+	  }
 
-	for(size_t i = 0; i < allTracks.size(); i++){
-		switch(i){
-			case 0:
-	    		for(std::vector<Eigen::Vector4d>::iterator stateIt = allTracks[i]->estimated_states_.begin(); stateIt != allTracks[i]->estimated_states_.end(); stateIt++){
-	    			std::cout << (*stateIt).transpose() << std::endl;
-	    			obj0Points_Est.push_back(std::make_pair((*stateIt)[0], (*stateIt)[1]));
-	    		}
-	    		break;
-			case 1:
-	    		for(std::vector<Eigen::Vector4d>::iterator stateIt = allTracks[i]->estimated_states_.begin(); stateIt != allTracks[i]->estimated_states_.end(); stateIt++){
-	    			std::cout << (*stateIt).transpose() << std::endl;
-	    			obj1Points_Est.push_back(std::make_pair((*stateIt)[0], (*stateIt)[1]));
-	    		}
-	    		break;
-			case 2:
-	    		for(std::vector<Eigen::Vector4d>::iterator stateIt = allTracks[i]->estimated_states_.begin(); stateIt != allTracks[i]->estimated_states_.end(); stateIt++){
-	    			std::cout << (*stateIt).transpose() << std::endl;
-	    			obj2Points_Est.push_back(std::make_pair((*stateIt)[0], (*stateIt)[1]));
-	    		}
-	    		break;
+	  gp << "set label 'FA' at " << detectionsMat(0,Nobjects) << "," << detectionsMat(1,Nobjects) << std::endl;
 
-		}
+		usleep(300000);
 
 	}
 
-	gp << "replot" << gp.file1d(obj0Points_Est) << " with points title 'obj0_Est' pt 6 ps 2" << std::endl;
-	gp << "replot" << gp.file1d(obj1Points_Est) << " with points title 'obj1_Est' pt 6 ps 2" << std::endl;
-	gp << "replot" << gp.file1d(obj2Points_Est) << " with points title 'obj2_Est' pt 6 ps 2" << std::endl;
+	// Gnuplot positions
+  ///////////////////////////////////////////////////////////////////////////
+
+
+
+  //
+  /////////////////////////////////////////////////////////////////////////
+
+
+
+	//rootHypothesis->print();
+
+
+
+
+//	gp << "replot" << gp.file1d(obj1Points_Est) << " with linepoints title 'obj1_Est' pt 6 ps 2" << std::endl;
+//	gp << "replot" << gp.file1d(obj2Points_Est) << " with linepoints title 'obj2_Est' pt 6 ps 2" << std::endl;
 
 
 

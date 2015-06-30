@@ -664,10 +664,10 @@ public:
       //std::cout << BOLDGREEN << "Most likely hypothesis for cycle " << cycle_ << " has id " << mostlikelyHypothesis->getId() << RESET << std::endl;
       //std::cout << BOLDGREEN << "Most cumulative likeli in cycle" << cycle_ << " is " << mostCumLikelyHypothesis->getId() << RESET << std::endl;
 
-      HypothesisPtr newRoot;
-      if(rootHypothesis->getNewRootByPruning(newRoot,cycle_,3)){
-        rootHypothesis = newRoot;
-      }
+      //HypothesisPtr newRoot;
+      rootHypothesis->getNewRootByPruning(rootHypothesis,cycle_,3);
+        //rootHypothesis = newRoot;
+
       std::cout << BOLDRED << "Successful pruning!" << std::endl;
     	//rootHypothesis->coutCurrentSolutions(cycle_);
     }

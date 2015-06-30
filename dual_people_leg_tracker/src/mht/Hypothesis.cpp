@@ -18,7 +18,7 @@ const long double prob_detected_approved = 0.2;
 const long double prob_occluded_approved = 0.79;
 const long double prob_deleted_approved = 0.01;
 
-const long double prob_new = 0.004;
+const long double prob_new = 0.0031;
 const long double prob_fal = 0.003;
 
 
@@ -40,7 +40,7 @@ Hypothesis::Hypothesis(int cycle):
 
 Hypothesis::~Hypothesis() {
 	// TODO Auto-generated destructor stub
-  std::cout << MAGENTA << "Hypo[" << getId() << "] is deleted" << RESET << std::endl;
+  //std::cout << MAGENTA << "Hypo[" << getId() << "] is deleted" << RESET << std::endl;
 }
 
 unsigned int Hypothesis::getNumberOfTracks(){
@@ -236,7 +236,7 @@ bool Hypothesis::solveCostMatrix(){
     // TODO depend this on the number of measurements
 
     //std::vector<Solution> pre;
-    int k=2;
+    int k=5;
     solutions = murty(costMatrix,k);
 
     //pre = solutions;
@@ -484,14 +484,14 @@ bool Hypothesis::createChildren(){
 		  assignment.setDeletion(this->tracks_[i]);
 		  assignments.push_back(assignment);
 	  }
-      std::cout << "N_det_F = " << N_det_F << std::endl;
-      std::cout << "N_occ_F = " << N_occ_F << std::endl;
-      std::cout << "N_del_F = " << N_del_F << std::endl;
-      std::cout << "N_det_A = " << N_det_A << std::endl;
-      std::cout << "N_occ_A = " << N_occ_A << std::endl;
-      std::cout << "N_del_A = " << N_del_A << std::endl;
-      std::cout << "N_new = " << N_new << std::endl;
-      std::cout << "N_false = " << N_false << std::endl;
+//      std::cout << "N_det_F = " << N_det_F << std::endl;
+//      std::cout << "N_occ_F = " << N_occ_F << std::endl;
+//      std::cout << "N_del_F = " << N_del_F << std::endl;
+//      std::cout << "N_det_A = " << N_det_A << std::endl;
+//      std::cout << "N_occ_A = " << N_occ_A << std::endl;
+//      std::cout << "N_del_A = " << N_del_A << std::endl;
+//      std::cout << "N_new = " << N_new << std::endl;
+//      std::cout << "N_false = " << N_false << std::endl;
 
       //std::cout << "prob" << pow(prob_new, N_new) << std::endl;
 	  // Calulate the
