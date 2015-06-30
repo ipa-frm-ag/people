@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 
 	}
 
-	//rootHypothesis->print();
+	rootHypothesis->print();
 
 	std::vector<TrackPtr> allTracks;
 	rootHypothesis->getTracks(allTracks, cycle_+1);

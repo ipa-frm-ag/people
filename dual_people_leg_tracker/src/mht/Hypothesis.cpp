@@ -24,9 +24,9 @@ const long double prob_fal = 0.003;
 Hypothesis::Hypothesis(int cycle):
 	newTrackCostValue_(150),
 	falseAlarmCostValue_(100),
-	deletionCostValue_(700),
+	deletionCostValue_(500),
 	occlusionCostValue_(800),
-	invalidValue_(-9999),
+	invalidValue_(-9000),
 	probability_(1.0),
 	cycle_(cycle),
 	root_cycle_(0),
@@ -140,7 +140,7 @@ bool Hypothesis::createCostMatrix(){
     // Fill the Deletions
     costMatrix.block(0,numberOfMeasurements_+getNumberOfTracks(),getNumberOfTracks(),getNumberOfTracks()).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(getNumberOfTracks(),1,this->deletionCostValue_);
 
-    costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*getNumberOfTracks()) = Eigen::Matrix< int, -1, -1>::Constant(2*numberOfMeasurements_,2*numberOfTracks,-1000);
+    costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*getNumberOfTracks()) = Eigen::Matrix< int, -1, -1>::Constant(2*numberOfMeasurements_,2*numberOfTracks,-600);
 
     // If there are more Tracks
     if(getNumberOfTracks() > numberOfMeasurements_){
