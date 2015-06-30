@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 	// Time settings
 	double dt = 0.08; // Timestep
-	double duration = 1;
+	double duration = 2;
 
 	ros::Time time(0);
 
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	Eigen::Matrix<double,4,N> objects;
 	objects = Eigen::Matrix<double,4,-1>::Zero(4,N);
 	objects.row(0) << 0, 5, 10;
-	objects.row(2) << 0, 2, 0;
+	objects.row(2) << 0, 4, 0;
 	objects.row(3) << 0.5, 1, 4;
 
 	std::cout << "objects" << std::endl << objects << std::endl;
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 		//std::cout << BOLDGREEN << "Most cumulative likeli in cycle" << cycle_ << " is " << mostCumLikelyHypothesis->getId() << RESET << std::endl;
 
 		HypothesisPtr newRoot;
-		if(rootHypothesis->getNewRootByPruning(newRoot,cycle_,4)){
+		if(rootHypothesis->getNewRootByPruning(newRoot,cycle_,2)){
 		  rootHypothesis = newRoot;
 		}
 		  std::cout << BOLDRED << "Successful pruning!" << std::endl;
