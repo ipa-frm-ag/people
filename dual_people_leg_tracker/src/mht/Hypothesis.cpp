@@ -27,7 +27,7 @@ Hypothesis::Hypothesis(int cycle):
 	falseAlarmCostValue_(prob_fal),
 	deletionCostValue_(prob_deleted_free),
 	occlusionCostValue_(prob_occluded_free),
-	invalidValue_(20000),
+	invalidValue_(80000),
 	probability_(1.0),
 	cycle_(cycle),
 	root_cycle_(0),
@@ -40,7 +40,7 @@ Hypothesis::Hypothesis(int cycle):
 
 Hypothesis::~Hypothesis() {
 	// TODO Auto-generated destructor stub
-  //std::cout << MAGENTA << "Hypo[" << getId() << "] is deleted" << RESET << std::endl;
+  std::cout << MAGENTA << "Hypo[" << getId() << "] is deleted" << RESET << std::endl;
 }
 
 unsigned int Hypothesis::getNumberOfTracks(){
@@ -112,14 +112,19 @@ bool Hypothesis::createCostMatrix(){
 
 	unsigned int size;
 	if(getNumberOfTracks() > numberOfMeasurements_){
-		// Initialize
+		// Initialize with zeros
 		size = numberOfMeasurements_ + 2 * numberOfTracks;
-	    costMatrix = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Constant(size,size,this->invalidValue_);
+	  costMatrix = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Constant(size,size,0);
 	}else{
-		// Initialize
+		// Initialize (set Zeros)
 		size = numberOfTracks 	  + 2 * numberOfMeasurements_;
-	    costMatrix = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Constant(size,size,this->invalidValue_);
+	  costMatrix = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Constant(size,size,0);
 	}
+
+	// Fill zeros
+  costMatrix.block(0,0,numberOfTracks, size) = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Constant(numberOfTracks, size,this->invalidValue_);
+  costMatrix.block(0,0,size,numberOfMeasurements_) = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Constant(size,numberOfMeasurements_,this->invalidValue_);
+
 
     // Print the cost matrix
     //std::cout << "The cost matrix is now " << std::endl << costMatrix << std::endl;
@@ -131,10 +136,10 @@ bool Hypothesis::createCostMatrix(){
 	  int occlusionCosts  = -log(this->occlusionCostValue_) * factor;
 	  int deletionCosts = -log(this->deletionCostValue_) * factor;
 
-	  std::cout << "newTrackCosts " << newTrackCosts << std::endl;
-	  std::cout << "falseAlarmCosts " << falseAlarmCosts << std::endl;
-	  std::cout << "occlusionCosts " << occlusionCosts << std::endl;
-	  std::cout << "deletionCosts " << deletionCosts << std::endl;
+	  //std::cout << "newTrackCosts " << newTrackCosts << std::endl;
+	  //std::cout << "falseAlarmCosts " << falseAlarmCosts << std::endl;
+	  //std::cout << "occlusionCosts " << occlusionCosts << std::endl;
+	  //std::cout << "deletionCosts " << deletionCosts << std::endl;
 
 
     // Fill the new tracks
@@ -151,17 +156,15 @@ bool Hypothesis::createCostMatrix(){
     // Fill the Deletions
     costMatrix.block(0,numberOfMeasurements_+getNumberOfTracks(),getNumberOfTracks(),getNumberOfTracks()).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(getNumberOfTracks(),1,deletionCosts);
 
-    costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*getNumberOfTracks()) = Eigen::Matrix< int, -1, -1>::Constant(2*numberOfMeasurements_,2*numberOfTracks,20000);
+/*    //costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*getNumberOfTracks()) = Eigen::Matrix< int, -1, -1>::Constant(2*numberOfMeasurements_,2*numberOfTracks,0);
 
     // If there are more Tracks
     if(getNumberOfTracks() > numberOfMeasurements_){
-    	costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfMeasurements_,1,20000);
+      int diff = getNumberOfTracks()-numberOfMeasurements_;
 
-    	costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfMeasurements_,1,20000);
+      std
 
-    	costMatrix.block(numberOfTracks,numberOfTracks+numberOfMeasurements_,numberOfTracks,numberOfTracks).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfTracks,1,20000);
-
-    	costMatrix.block(numberOfTracks+numberOfMeasurements_*2-1,3*numberOfMeasurements_,1,2*numberOfTracks - 2*numberOfMeasurements_) = Eigen::Matrix< int, 1, -1>::Constant(1,2*numberOfTracks - 2*numberOfMeasurements_,20000);
+      costMatrix.block(numberOfTracks+numberOfMeasurements_*2-1,numberOfMeasurements_,diff,2*numberOfTracks) = Eigen::Matrix< int, 1, -1>::Constant(diff,2*numberOfTracks,0);
 
     }
 
@@ -170,10 +173,10 @@ bool Hypothesis::createCostMatrix(){
     {
     	//costMatrix.block(numberOfTracks,numberOfTracks+numberOfMeasurements_,numberOfTracks,numberOfTracks).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfTracks,1,-555);
 
-    	costMatrix.block(numberOfTracks,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,20000);
-    	costMatrix.block(numberOfTracks+numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,20000);
+    	costMatrix.block(numberOfTracks,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,0);
+    	costMatrix.block(numberOfTracks+numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,0);
 
-    }
+    }*/
 
 /*    if(numberOfMeasurements_ > getNumberOfTracks() && getNumberOfTracks()>0){
     	// Fixation
@@ -231,15 +234,14 @@ bool Hypothesis::solveCostMatrix(){
     //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
 
     // TODO depend this on the number of measurements
-    int k_pre = 20;
-    int k = 2;
 
-    std::vector<Solution> pre;
-    pre = murty(costMatrix,k_pre);
+    //std::vector<Solution> pre;
+    int k=2;
+    solutions = murty(costMatrix,k);
 
     //pre = solutions;
 
-    int last_cost = 0;
+/*    int last_cost = 0;
     for(size_t i = 0; i < k_pre; i++){
       std::cout << "k_pre" << i << " solutions" << solutions.size() << std::endl;
     	if(pre[i].cost_total != last_cost){
@@ -248,7 +250,7 @@ bool Hypothesis::solveCostMatrix(){
     		last_cost = pre[i].cost_total;
     		if(solutions.size() == k) break;
     	}
-    }
+    }*/
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
     // TODO Calculate the crossing value of the solutions in order to reject obvious unrealistic solutions
@@ -382,6 +384,8 @@ bool Hypothesis::createChildren(){
 
 	ROS_ASSERT(solutions.size() > 0);
 
+
+
 	Eigen::Matrix<double, -1, 1> childProbs = Eigen::Matrix<double, -1, 1>::Zero(solutions.size(),1);
 		//double childProbs[solutions.size];
 
@@ -422,6 +426,8 @@ bool Hypothesis::createChildren(){
 
 			  // Skip if there is no assignment
 			  if(assignmentMatrix(r,c) == 0) continue;
+
+			  ROS_ASSERT(this->tracks_.size() > r);
 
 			  TrackAssignment assignment;
 			  assignment.setDetection(this->tracks_[r],c);
@@ -478,14 +484,14 @@ bool Hypothesis::createChildren(){
 		  assignment.setDeletion(this->tracks_[i]);
 		  assignments.push_back(assignment);
 	  }
-//      std::cout << "N_det_F = " << N_det_F << std::endl;
-//      std::cout << "N_occ_F = " << N_occ_F << std::endl;
-//      std::cout << "N_del_F = " << N_del_F << std::endl;
-//      std::cout << "N_det_A = " << N_det_A << std::endl;
-//      std::cout << "N_occ_A = " << N_occ_A << std::endl;
-//      std::cout << "N_del_A = " << N_del_A << std::endl;
-//      std::cout << "N_new = " << N_new << std::endl;
-//      std::cout << "N_false = " << N_false << std::endl;
+      std::cout << "N_det_F = " << N_det_F << std::endl;
+      std::cout << "N_occ_F = " << N_occ_F << std::endl;
+      std::cout << "N_del_F = " << N_del_F << std::endl;
+      std::cout << "N_det_A = " << N_det_A << std::endl;
+      std::cout << "N_occ_A = " << N_occ_A << std::endl;
+      std::cout << "N_del_A = " << N_del_A << std::endl;
+      std::cout << "N_new = " << N_new << std::endl;
+      std::cout << "N_false = " << N_false << std::endl;
 
       //std::cout << "prob" << pow(prob_new, N_new) << std::endl;
 	  // Calulate the
@@ -509,12 +515,12 @@ bool Hypothesis::createChildren(){
 
       // Print the assignments
       //std::cout << std::endl << "Assignments:" << std::endl;
-	    std::cout << WHITE << "------------------" << std::endl;
+	    //std::cout << WHITE << "------------------" << std::endl;
       for(std::vector<TrackAssignment>::iterator assIt = assignments.begin(); assIt != assignments.end(); assIt++){
-        assIt->print();
+        //assIt->print();
 
       }
-      std::cout << WHITE << "------------------" << std::endl;
+      //std::cout << WHITE << "------------------" << std::endl;
       //std::cout << std::endl << "Assignments done" << std::endl;
 
       // Create child
@@ -868,6 +874,15 @@ void Hypothesis::recursiveRootCycleUpdate(int cycle){
     this->children_[i]->recursiveRootCycleUpdate(cycle);
   }
 
+}
+
+void Hypothesis::removeChildren(){
+  for(size_t i = 0; i<this->children_.size(); i++){
+    this->children_[i]->removeChildren();
+  }
+  for(size_t i = 0; i<this->children_.size(); i++){
+    this->children_.clear();
+  }
 }
 
 

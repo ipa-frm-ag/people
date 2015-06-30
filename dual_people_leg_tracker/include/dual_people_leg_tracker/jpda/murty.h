@@ -176,7 +176,7 @@ inline std::vector<Solution> murty(Eigen::Matrix<int, -1, -1> costMat, int nBest
         // Check the assignment matrix
 
         // If there is an assignment
-        if(lowestCostPair->solution.assignmentMatrix(i,j) == 1){
+        if(lowestCostPair->solution.assignmentMatrix(i,j) == 1 && lowestCostPair->problem(i,j) != 0){
 
           // Setze einen Wert auf Inf
           Eigen::Matrix<int, -1, -1> problem_copy = lowestCostPair->problem;

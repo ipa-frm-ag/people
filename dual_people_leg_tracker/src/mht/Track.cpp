@@ -116,7 +116,7 @@ void Track::removeOccluded(){
 
 double Track::timeOccludedSeconds(ros::Time now){
 	if(this->is_occluded_){
-		std::cout << "TRACK[" << getId() << "] occluded for " << (now-this->initial_occlusion_time_).toSec() << std::endl;
+		//std::cout << "TRACK[" << getId() << "] occluded for " << (now-this->initial_occlusion_time_).toSec() << std::endl;
 		return (now-this->initial_occlusion_time_).toSec();
 	}
 	return 0;

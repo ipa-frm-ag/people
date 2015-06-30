@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 	// Time settings
 	double dt = 0.08; // Timestep
-	double duration = 0.20;
+	double duration = 1;
 
 	ros::Time time(0);
 
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 	objects.row(2) << 0, 0, 0;
 
 	// Y Vel
-	objects.row(3) << 0.1, 0.25, 0.25;
+	objects.row(3) << 0.3, 0.35, 0.25;
 
 	std::cout << "objects" << std::endl << objects << std::endl;
 
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 			 0,        0,        0,        velNoise;
 
   Eigen::Matrix<double,2,2> R_; // System Noise
-  double measNoise = 0.0;
+  double measNoise = 0.01;
   R_ <<    measNoise, 0,
          0,        measNoise;
 
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
 			objects(0,0) += objects(0,0) * sin(t*8)*0.1;
 		}
 
-		if(t==0.8){
+		if(t==0.08){
 		  detectionsMat.resize(2,2);
 		  detectionsMat.col(0) = H_ * objects.col(0);
 		  detectionsMat.col(1) = H_ * objects.col(1);
@@ -139,6 +139,10 @@ int main(int argc, char **argv)
 	    //detectionsMat.col(NMeasInit) = Eigen::Vector2d::Random();
 		}
 
+		if(t==0.24){
+		  detectionsMat.resize(2,4);
+		}
+
 		std::cout << "detectionsMat" << detectionsMat << std::endl;
 
 
@@ -147,7 +151,7 @@ int main(int argc, char **argv)
 		rootHypothesis->assignMeasurements(cycle_, detectionsMat, time);
 
     //rootHypothesis->print();
-		rootHypothesis->coutCurrentSolutions(cycle_);
+		//rootHypothesis->coutCurrentSolutions(cycle_);
 
 		//std::cout << "first call on get most likely" << std::endl;
 		HypothesisPtr mostlikelyHypothesis = rootHypothesis->getMostLikelyHypothesis(cycle_+1);
@@ -243,9 +247,9 @@ int main(int argc, char **argv)
 
 	}
 
-	gp << "replot" << gp.file1d(obj0Points_Est) << " with points title 'obj0_Est' pt 6 ps 1" << std::endl;
-	gp << "replot" << gp.file1d(obj1Points_Est) << " with points title 'obj1_Est' pt 6 ps 1" << std::endl;
-	gp << "replot" << gp.file1d(obj2Points_Est) << " with points title 'obj2_Est' pt 6 ps 1" << std::endl;
+	gp << "replot" << gp.file1d(obj0Points_Est) << " with points title 'obj0_Est' pt 6 ps 2" << std::endl;
+	gp << "replot" << gp.file1d(obj1Points_Est) << " with points title 'obj1_Est' pt 6 ps 2" << std::endl;
+	gp << "replot" << gp.file1d(obj2Points_Est) << " with points title 'obj2_Est' pt 6 ps 2" << std::endl;
 
 
 

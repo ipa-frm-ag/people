@@ -617,14 +617,21 @@ public:
 
     // Transform the measurements into a Matrix
     Eigen::Matrix<double,2,-1> detectionsMat;
-    detectionsMat = Eigen::Matrix<double,2,-1>::Zero(2,detections.size());
+    detectionsMat = Eigen::Matrix<double,2,-1>::Zero(2,3);
 
+    if(cycle_ > 3){
+      //detectionsMat = Eigen::Matrix<double,2,-1>::Zero(2,4);
+    }
+    if(cycle_ > 5){
+      //detectionsMat = Eigen::Matrix<double,2,-1>::Zero(2,2);
+    }
     for(int i = 0; i < detections.size(); i++){
-    	detectionsMat(0,i) = detections[i]->point_[0];
-    	detectionsMat(1,i) = detections[i]->point_[1];
+    	//detectionsMat(0,i) = detections[i]->point_[0];
+    	//detectionsMat(1,i) = detections[i]->point_[1];
     }
 
     std::cout << "Detections" << std::endl << detectionsMat << std::endl;
+
 
 
     ROS_DEBUG("%sMHT [Cycle %u]", BOLDWHITE, cycle_);
@@ -632,7 +639,7 @@ public:
     mhtTimer.start();
     if(firstRun){
 
-    	rootHypothesis = HypothesisPtr(new Hypothesis(0));
+    	rootHypothesis = HypothesisPtr(new Hypothesis(cycle_));
     	rootHypothesis->setParentProbability(1.0);
     	rootHypothesis->setParentTime(scan->header.stamp);
     	rootHypothesis->assignMeasurements(cycle_, detectionsMat, scan->header.stamp);
@@ -652,26 +659,27 @@ public:
       //rootHypothesis->coutCurrentSolutions(cycle_);
 
       //std::cout << "first call on get most likely" << std::endl;
-      HypothesisPtr mostlikelyHypothesis = rootHypothesis->getMostLikelyHypothesis(cycle_+1);
-      HypothesisPtr mostCumLikelyHypothesis = rootHypothesis->getMostLikelyHypothesisCumulative(cycle_+1);
+      //HypothesisPtr mostlikelyHypothesis = rootHypothesis->getMostLikelyHypothesis(cycle_+1);
+      //HypothesisPtr mostCumLikelyHypothesis = rootHypothesis->getMostLikelyHypothesisCumulative(cycle_+1);
       //std::cout << BOLDGREEN << "Most likely hypothesis for cycle " << cycle_ << " has id " << mostlikelyHypothesis->getId() << RESET << std::endl;
       //std::cout << BOLDGREEN << "Most cumulative likeli in cycle" << cycle_ << " is " << mostCumLikelyHypothesis->getId() << RESET << std::endl;
 
       HypothesisPtr newRoot;
-      if(rootHypothesis->getNewRootByPruning(newRoot,cycle_,2)){
+      if(rootHypothesis->getNewRootByPruning(newRoot,cycle_,3)){
         rootHypothesis = newRoot;
       }
-        std::cout << BOLDRED << "Successful pruning!" << std::endl;
+      std::cout << BOLDRED << "Successful pruning!" << std::endl;
     	//rootHypothesis->coutCurrentSolutions(cycle_);
     }
+
 
     mhtTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - MHT",__func__);
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"DualTracker::%s - MHT took %f ms",__func__, mhtTimer.getElapsedTimeMs());
-    //ROS_DEBUG("%MHT Done! [Cycle %u]", BOLDWHITE, cycle_);
+    ROS_DEBUG("%MHT Done! [Cycle %u]", BOLDWHITE, cycle_);
 
     ///////////////////////////////////////////////////////////////////////////
-    // GNUPLOT
+/*    // GNUPLOT
     gp << "set xrange [-10:0]\nset yrange [-15:0]\n";
     //gp << "set autoscale" << std::endl;
     // Iterate detections
@@ -685,15 +693,16 @@ public:
 
     // Get all tracks
     std::vector<TrackPtr> allTracks;
-    rootHypothesis->getTracks(allTracks, cycle_+1);
 
+    HypothesisPtr mostLikely = rootHypothesis->getMostLikelyHypothesis(cycle_);
+    mostLikely.getTracks(allTracks,cycle_);
 
     for(size_t i = 0; i < allTracks.size(); i++){
 
       std::vector<std::pair<double, double> > track;
 
       for(std::vector<Eigen::Vector4d>::iterator stateIt = allTracks[i]->estimated_states_.begin(); stateIt != allTracks[i]->estimated_states_.end(); stateIt++){
-        std::cout << "x:" << (*stateIt)[0] << " y:" << (*stateIt)[1] << std::endl;
+        //std::cout << "x:" << (*stateIt)[0] << " y:" << (*stateIt)[1] << std::endl;
 
         track.push_back(std::make_pair((*stateIt)[0], (*stateIt)[1]));
 
@@ -705,7 +714,7 @@ public:
         gp << "replot";
       gp << gp.file1d(track) << " with linespoints title 'meas' pt 7 ps 1" << std::endl;
 
-    }
+    }*/
 
 
     //

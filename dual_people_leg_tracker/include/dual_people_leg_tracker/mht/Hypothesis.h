@@ -190,6 +190,8 @@ public:
 
 	int getDepth(){ return this->cycle_ - this->root_cycle_; };
 
+	void removeChildren();
+
 };
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_HYPOTHESIS_H_ */
