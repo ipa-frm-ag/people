@@ -109,13 +109,14 @@ bool Hypothesis::createCostMatrix(){
 
 	unsigned int numberOfTracks = getNumberOfTracks();
 
+	unsigned int size;
 	if(getNumberOfTracks() > numberOfMeasurements_){
 		// Initialize
-		unsigned int size = numberOfMeasurements_ + 2 * numberOfTracks;
+		size = numberOfMeasurements_ + 2 * numberOfTracks;
 	    costMatrix = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Constant(size,size,this->invalidValue_);
 	}else{
 		// Initialize
-		unsigned int size = numberOfTracks 	  + 2 * numberOfMeasurements_;
+		size = numberOfTracks 	  + 2 * numberOfMeasurements_;
 	    costMatrix = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Constant(size,size,this->invalidValue_);
 	}
 
@@ -140,18 +141,38 @@ bool Hypothesis::createCostMatrix(){
     costMatrix.block(0,numberOfMeasurements_+getNumberOfTracks(),getNumberOfTracks(),getNumberOfTracks()).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(getNumberOfTracks(),1,this->deletionCostValue_);
 
     costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*getNumberOfTracks()) = Eigen::Matrix< int, -1, -1>::Constant(2*numberOfMeasurements_,2*numberOfTracks,-1000);
+
+    // If there are more Tracks
     if(getNumberOfTracks() > numberOfMeasurements_){
-    	costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfMeasurements_,1,-999);
+    	costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfMeasurements_,1,-500);
 
+    	costMatrix.block(getNumberOfTracks(),numberOfMeasurements_,2*numberOfMeasurements_,2*numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfMeasurements_,1,-500);
+
+    	//costMatrix.block(numberOfTracks,numberOfTracks+numberOfMeasurements_,numberOfTracks,numberOfTracks).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfTracks,1,-500);
+
+    	costMatrix.block(numberOfTracks+numberOfMeasurements_*2-1,3*numberOfMeasurements_,1,2*numberOfTracks - 2*numberOfMeasurements_) = Eigen::Matrix< int, 1, -1>::Constant(1,2*numberOfTracks - 2*numberOfMeasurements_,-500);
 
     }
-    else{
 
-    	costMatrix.block(numberOfTracks,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,-1000);
-    	costMatrix.block(numberOfTracks+numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,-1000);
+    // If there are more measurements
+    else
+    {
+    	//costMatrix.block(numberOfTracks,numberOfTracks+numberOfMeasurements_,numberOfTracks,numberOfTracks).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfTracks,1,-555);
 
-    	costMatrix.block(numberOfTracks,numberOfMeasurements_,2*numberOfTracks,2*numberOfTracks).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(2*numberOfTracks,1,-999);
+    	costMatrix.block(numberOfTracks,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,-500);
+    	costMatrix.block(numberOfTracks+numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_,numberOfMeasurements_).diagonal() = Eigen::Matrix< int, -1, 1>::Constant(numberOfMeasurements_,1,-500);
+
     }
+
+/*    if(numberOfMeasurements_ > getNumberOfTracks() && getNumberOfTracks()>0){
+    	// Fixation
+    	std::cout << "numberOfCols " << numberOfCols << std::endl;
+    	std::cout << "numberOfMeasurements_ " << numberOfMeasurements_ << std::endl;
+    	std::cout << "getNumberOfTracks() " << getNumberOfTracks() << std::endl;
+    	std::cout << "start (" << numberOfTracks+numberOfMeasurements_*2-1 << " , " << numberOfMeasurements_*3 << ")" << std::endl;
+    	costMatrix.block(numberOfTracks+numberOfMeasurements_*2-1,numberOfMeasurements_*3,1,size-3*numberOfMeasurements_) = Eigen::Matrix< int, -1, -1>::Constant(1,size-3*numberOfMeasurements_,-500);
+
+    }*/
 
     // Fill the validated measurements (using mahalanobis distance)
     for(unsigned int t=0; t < numberOfTracks; t++){
@@ -196,8 +217,22 @@ bool Hypothesis::solveCostMatrix(){
     //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
 
     // TODO depend this on the number of measurements
-    int k = 1;
-    solutions = murty(-costMatrix,k);
+    int k_pre = 15;
+    int k = 2;
+
+    std::vector<Solution> pre;
+    pre = murty(-costMatrix,k_pre);
+
+    //pre = solutions;
+
+    int last_cost = 0;
+    for(size_t i = 0; i < k_pre; i++){
+    	if(pre[i].cost_total != last_cost){
+    		solutions.push_back(pre[i]);
+    		last_cost = pre[i].cost_total;
+    		if(solutions.size() == k) break;
+    	}
+    }
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
     // TODO Calculate the crossing value of the solutions in order to reject obvious unrealistic solutions
@@ -218,11 +253,13 @@ bool Hypothesis::stdCoutSolutions(){
 	Eigen::Matrix<double, -1, 1> childProbs = Eigen::Matrix<double, -1, 1>::Zero(solutions.size(),1);
 	//double childProbs[solutions.size];
 
+	std::cout << "########################################################" << std::endl;
+
 	size_t solCounter = 0;
     for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
       std::cout << "Starting printing the solutions for HYP[" << getId() << "]" << " cycle " << this->cycle_ << std::endl;
       color_print_solution(costMatrix,solIt->assignmentMatrix);
-      std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
+      std::cout << "Costs "<< "\033[1m\033[31m" << -solIt->cost_total << "\033[0m" << std::endl;
 
       // Get the assignment matrix
       Eigen::Matrix<int, -1, -1> assignmentMatrix = solIt->assignmentMatrix;
