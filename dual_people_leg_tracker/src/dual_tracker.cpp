@@ -45,6 +45,7 @@
 #include <dual_people_leg_tracker/math/math_functions.h>
 #include <dual_people_leg_tracker/jpda/murty.h>
 #include <dual_people_leg_tracker/jpda/jpda.h>
+#include <dual_people_leg_tracker/models/SensorModel.h>
 #include <leg_detector/laser_processor.h>
 #include <leg_detector/calc_leg_features.h>
 #include <dual_people_leg_tracker/visualization/visualization_conversions.h>
@@ -85,6 +86,7 @@
 
 // DLib include
 #include <dlib/optimization/max_cost_assignment.h>
+#include <dual_people_leg_tracker/jpda/lap.h>
 
 // Namespaces
 using namespace std;
@@ -147,6 +149,8 @@ public:
   ScanMask mask_; /**< A scan mask */
 
   OcclusionModelPtr occlusionModel_; /**< The occlusion model */
+
+  SensorModel sensorModel_; /**< The sensor model */
 
   int mask_count_;
 
@@ -249,7 +253,8 @@ public:
     laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
     cycle_(0),
     occlusionModel_(new OcclusionModel(tfl_)),
-    new_track_creation_likelihood_(0.5)
+    new_track_creation_likelihood_(0.5),
+    sensorModel_(tfl_)
   {
     if (g_argc > 1)
     {
@@ -445,9 +450,17 @@ public:
         (*sf_iter)->setValidity(false);
       }
 
+      if(!sensorModel_.isWithinScanArea((*sf_iter)->pos_vel_.pos_,*scan, fixed_frame)){
+        std::cout << BOLDRED << "LT(" << (*sf_iter)->int_id_ << ") was deleted because it is not in the sensor range" << RESET << std::endl;
+        (*sf_iter)->setValidity(false);
+      }
+
       //std::cout << **sf_iter << std::endl;
       //std::cout << "ReferenceCount:" << (*sf_iter).use_count() << std::endl;
     }
+
+    // Remove legs that are outside
+
 
     // Remove invalid people tracker
     people_trackers_.removeInvalidTrackers();
@@ -601,17 +614,6 @@ public:
     // Precheck for new tracks
 
 
-
-
-
-
-
-
-
-
-
-
-
     int i=0; // Object indice
     int j=1; // Measurement indice
 
@@ -639,40 +641,71 @@ public:
           legIt++)
       {
 
-        Stamped<Point> loc = (*detectionIt)->point_;
+        Stamped<Point> meas = (*detectionIt)->point_;
         SampleSet* cluster = (*detectionIt)->cluster_;
 
         // find the closest distance between candidate and trackers
-        float dist = loc.distance((*legIt)->position_);
+        float dist = meas.distance((*legIt)->position_);
         // TODO: Where exactly is loc to be expected? Should it be calculated based on particles?
 
         // Calculate assignment probability
-        float assignmentProbability;
-        assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
+        double assignmentProbability;
+
+//        if(dist < max_track_jump_m){
+//
+//
+//
+//          assignmentProbability = (int) (log((*legIt)->getMeasurementProbability(meas)) * 1000);
+//        }else{
+//          assignmentProbability = -10000; // TODO watch for murty!!!
+//        }
+
+        double measProb = (*legIt)->getMeasurementProbability(meas);
+        double negLogLikelihood = log(measProb);
+
+        std::cout << "LT" << (*legIt)->getId() << ") measProb:" << measProb << " neglikelihood " << negLogLikelihood << std::endl;
+
+        assignmentProbability = (int) (-log((*legIt)->getMeasurementProbability(meas)) * 10);
+
+        //assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
         // TODO investigate this parameters
         //costMatrix(i,j) = min((int)-log(assignmentProbability),1000);
-        costMatrix(i,j) = -assignmentProbability*100;
+
+        //costMatrix(i,j) = -60; // TODO
+        costMatrix(i,j) = assignmentProbability;
 
         i++;
       }
-      //std::cout << std::endl;
       j++;
     }
 
-    // Fill the first column of the cost matrix with dummy data for occluded objects
-    int occlusionCostValue = -60; // TODO, make the dependend on something else
-    for(int i = 0; i<nObjects;i++){
-      costMatrix(i,0) = occlusionCostValue;
+    // Iterate through the trackers
+    int f = 0;
+    for (vector<LegFeaturePtr>::iterator legIt = propagated.begin();
+        legIt != propagated.end();
+        legIt++)
+    {
+
+      double occlusionProbability = (*legIt)->getOcclusionProbability(occlusionModel_);
+
+      //costMatrix(f,0) = (int) (-log(occlusionProbability) * 200);
+      costMatrix(f,0) = 60;
+      f++;
     }
+
+
+
 
     // Store the object indices, this is needed since the Leg Feature IDs will change with time due to creation and deletion of tracks
     Eigen::VectorXi indices = Eigen::VectorXi::Zero(nObjects,1);
+    std::map<int,int> idToIndexMap;
     int indices_counter = 0;
     for (vector<LegFeaturePtr>::iterator legIt = propagated.begin();
         legIt != propagated.end();
         legIt++)
     {
       indices(indices_counter) = (*legIt)->int_id_;
+      idToIndexMap.insert(std::pair<int,int>((*legIt)->getId(), indices_counter));
       indices_counter++;
     }
 
@@ -682,9 +715,15 @@ public:
     //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
     std::vector<Solution> solutions;
 
+
     // TODO depend this on the number of measurements
-    int k = nObjects;
-    solutions = murty(costMatrix,k);
+    int nMeas = detections.size();
+    int k = std::min(5,std::max(nObjects,nMeasurements));
+    solutions = murty(costMatrix,10);
+
+
+    std::cout << "################### Using Murty with k = " << k << "######## to solve" << std::endl;
+    std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
     // TODO Calculate the crossing value of the solutions in order to reject obvious unrealistic solutions
@@ -694,9 +733,6 @@ public:
       color_print_solution(costMatrix,solIt->assignmentMatrix);
       std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
     }
-
-    // DEBUG OUTPUT
-    std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
 
     // Precaculate which measurements will be required
     Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> neededUpdateMat = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nObjects,nMeasurements);
@@ -778,6 +814,8 @@ public:
     	}
     }
 
+
+
     // Print the probability matrix
     std::cout << "Probability Matrix:____" << std::endl;
     std::cout << "     |Occ  |";
@@ -834,6 +872,88 @@ public:
       std::cout << std::endl;
     }
 
+    // Look at the association probabilities
+    std::vector<PeopleTrackerPtr> peopleTracker;
+    peopleTracker = *(people_trackers_.getList());
+    for(std::vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker.begin(); peopleIt != peopleTracker.end(); peopleIt++){
+      //std::cout << (**peopleIt) << "should look at the matrix" << std::endl;
+
+      //std::cout << (**peopleIt).getLeg0()->getId() << "should look at the matrix" << std::endl;
+      //std::cout << (**peopleIt).getLeg1()->getId() << "should look at the matrix" << std::endl;
+
+      int row0Idx = idToIndexMap[(**peopleIt).getLeg0()->getId()];
+      int row1Idx = idToIndexMap[(**peopleIt).getLeg1()->getId()];
+
+      // Find the max Coeff
+      double row0maxCoeffValue;
+      double row1maxCoeffValue;
+
+      row0maxCoeffValue = assignmentProbabilityMatrixNormalized.row(row0Idx).maxCoeff();
+      row1maxCoeffValue = assignmentProbabilityMatrixNormalized.row(row1Idx).maxCoeff();
+
+      if(row0maxCoeffValue > 0.8 && row1maxCoeffValue > 0.8){
+
+      }
+
+      //ROS_ASSERT(row0maxCoeffValue != 0.5);
+
+      int row0ColMax; // maxCoeff of row0ColMax
+      int row1ColMax; // maxCoeff of row1ColMax
+
+      for(size_t i = 0; i < assignmentProbabilityMatrixNormalized.cols(); i++){
+        if(assignmentProbabilityMatrixNormalized(row0Idx, i) == row0maxCoeffValue){
+          row0ColMax = i;
+        }
+        if(assignmentProbabilityMatrixNormalized(row1Idx, i) == row1maxCoeffValue){
+          row1ColMax = i;
+        }
+      }
+
+      Eigen::Matrix<double,2,2> peopleAssignmentMatrix;
+      peopleAssignmentMatrix(0,0) = row0maxCoeffValue;
+      peopleAssignmentMatrix(1,0) = assignmentProbabilityMatrixNormalized(row1Idx, row0ColMax);
+      peopleAssignmentMatrix(1,1) = row1maxCoeffValue;
+      peopleAssignmentMatrix(0,1) = assignmentProbabilityMatrixNormalized(row0Idx, row1ColMax);
+
+      if((**peopleIt).getTotalProbability() > 0.5){
+      std::cout << "Coexist" << RED << std::endl << peopleAssignmentMatrix << std::endl;
+
+      double check = peopleAssignmentMatrix(1,0) + peopleAssignmentMatrix(0,1);
+
+      if(check > 0.2){
+        std::cout << "Conflict!!!" << check << std::endl;
+      }
+
+
+
+      assignmentProbabilityMatrixNormalized(row0Idx, row0ColMax) = row0maxCoeffValue + assignmentProbabilityMatrixNormalized(row1Idx, row0ColMax);
+      assignmentProbabilityMatrixNormalized(row1Idx, row0ColMax) -= row0maxCoeffValue;
+
+      assignmentProbabilityMatrixNormalized(row1Idx, row1ColMax) = row0maxCoeffValue + assignmentProbabilityMatrixNormalized(row0Idx, row1ColMax);
+      assignmentProbabilityMatrixNormalized(row0Idx, row1ColMax) -= row1maxCoeffValue;
+
+
+
+      // Print the assignment probability matrix
+      std::cout << "Corrected Assignment Probability Matrix:____" << std::endl;
+      std::cout << "     |Occ  |";
+      for(int j = 0; j < nMeasurements-1; j++)
+        std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
+      std::cout << RESET << std::endl;
+
+      for(int i = 0; i < nObjects; i++){
+        std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indices(i) << RESET <<"|";
+        for(int j = 0; j < nMeasurements; j++)
+          if(assignmentProbabilityMatrixNormalized(i,j) > 0.0)
+            std::cout << std::setw(5) << std::fixed << std::setprecision(3) << assignmentProbabilityMatrixNormalized(i,j) << "|";
+          else
+            std::cout << "     |";
+        std::cout << std::endl;
+      }
+
+      }
+    }
+
 
     // The assignment probability matrix indicates which measurements influences which tracker to what degree.
     //std::cout << "Assignment Probabilities Matrix" << std::endl << assignmentProbabilityMatrix << std::endl;
@@ -870,22 +990,22 @@ public:
       Eigen::VectorXd probs;
       probs = assignmentProbabilityMatrixNormalized.row(i);
 
-      if(probabilities.row(i).maxCoeff() > 0.03 && probabilities(i,0) < 0.5){
+      if(assignmentProbabilityMatrixNormalized.row(i).maxCoeff() > 0.03){
         std::cout << "LT" << propagated[i]->int_id_ << " is updated" << std::endl;
         propagated[i]->JPDAUpdate(detections, probs, occlusionModel_, scan->header.stamp);
       }
       // Avoid updates of bad leg trackers
       else
       {
+        //ROS_BREAK();
         std::cout << "LT" << i << " is NOT updated because no reliable association is found" << std::endl;
       }
     }
 
-
-
-    /// Create new trackers if needed
+    /////////////////////////////////////////////////////////////////////
+    /// NEW TRACKER CREATION
+    ////////////////////////////////////////////////////////////////////
     // Iterate through the assignment probabilities of each measurement, create a new LT for each LM not assigned to any LT
-    std::cout << "";
 
     unsigned int newTrackCounter = 0;
 
@@ -894,12 +1014,13 @@ public:
       // There should be at least some objects, this is not the case on the first run
       if(nObjects > 0){
         // Get the maximum likelihood
-        double maxLikelihood = probabilities.col(j).maxCoeff();
-        double minCreationLikelihood = 0.05;
+        double maxLikelihood = combinedMat.col(j).maxCoeff();
+        double minCreationLikelihood = 0.01;
 
-        if(maxLikelihood < 0.01){
 
-          std::cout << "max. Likelihood for LM" << j-1 << " is " << maxLikelihood;
+        if(maxLikelihood < minCreationLikelihood){
+
+          std::cout << "max. Likelihood for LM[" << j-1 << "] is " << maxLikelihood;
 
           LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[j-1]->point_, tfl_));
 
@@ -912,8 +1033,13 @@ public:
           // Increase the new track counter
           ++newTrackCounter;
 
-          std::cout << BOLDRED << " -> Creating new Tracker LT" << newLegFeature->int_id_ << RESET << std::endl;
+          std::cout << BOLDRED << " -> Creating new Tracker LT[" << newLegFeature->int_id_ << "]" << RESET << std::endl;
 
+        }
+        // NO LEG CREATED
+        else
+        {
+          std::cout << BOLDRED << "NO leg is created for LM[" << j-1 << "] because it has the prob: " << maxLikelihood << " (requested is max: " << minCreationLikelihood << std::endl;
         }
 
 

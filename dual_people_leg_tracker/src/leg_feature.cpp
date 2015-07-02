@@ -14,7 +14,7 @@ int LegFeature::nextid = 0;
 
 static std::string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
-static int NumberOfParticles = 750;
+static int NumberOfParticles = 400;
 
 /*LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl, OcclusionModelPtr ocm)
   :LegFeature(loc,tfl),
@@ -26,15 +26,19 @@ static int NumberOfParticles = 750;
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    leg_feature_predict_pos_cov_(1), // Around 0.05 // Variance of the
-    leg_feature_predict_vel_cov_(2),  // Around 1.0 should be fine, the bigger the more spread
+    leg_feature_predict_pos_cov_(3), // Around 0.05 // Variance of the
+    leg_feature_predict_pos_cov_init_(0.01),
+    leg_feature_predict_vel_cov_(1),  // Around 1.0 should be fine, the bigger the more spread
+    leg_feature_predict_vel_cov_init_(2.5),  // Around 1.0 should be fine, the bigger the more spread
     sys_sigma_(tf::Vector3(leg_feature_predict_pos_cov_, leg_feature_predict_pos_cov_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.0)), // The initialized system noise(the variance)
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
     use_filter_(true),
     is_valid_(true), // On construction the leg feature is always valid
-    leg_feature_update_cov_(0.0025), // The update measurement cov (should be around 0.0025, the smaller the peakier)
-    is_static_(true) // At the beginning the leg feature is considered static
+    leg_feature_update_cov_(0.0050), // The update measurement cov (should be around 0.0025, the smaller the peakier)
+    is_static_(true), // At the beginning the leg feature is considered static
+    no_observation_timeout_s_(0.3),
+    no_observation_timeout_asso_s_(4)
 {
   // Increase the id
   int_id_ = nextid++;
@@ -71,21 +75,11 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   tfl_.setTransform(pose);
 
   // Initialize the filter (Create the initial particles)
-  //BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(0.0000001, 0.0000001, 0.000000));
-
-  double maxSpeed = 1.5; // [m/T] T = Period
-
-  double sigmaSpeed = maxSpeed / 2.0; // Because we want the two sigma area
-
-  BFL::StatePosVel prior_sigma(tf::Vector3(0.01, 0.01, 0.0), tf::Vector3(sigmaSpeed, sigmaSpeed, 0.000000));
+  BFL::StatePosVel prior_sigma(tf::Vector3(leg_feature_predict_pos_cov_init_, leg_feature_predict_pos_cov_init_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.000000));
 
   // Initialization is around the measurement which initialized this leg feature using a uniform distribution
   BFL::StatePosVel mu(loc);
   filter_.initialize(mu, prior_sigma, time_.toSec());
-
-  // Get the first estimation of the particle state
-  BFL::StatePosVel est;
-  filter_.getEstimate(est);
 
   // Set the initial position
   initial_position_[0] = loc.getX();
@@ -95,11 +89,6 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   position_predicted_[0] = loc.getX();
   position_predicted_[1] = loc.getY();
   position_predicted_[2] = loc.getZ();
-
-  //leg_feature_update_cov_    = config.leg_feature_update_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_update_cov_ %f", __func__, leg_feature_update_cov_ );
-  //leg_feature_predict_pos_cov_    = config.leg_feature_predict_pos_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_predict_pos_cov_ %f", __func__, leg_feature_predict_pos_cov_ );
-  //leg_feature_predict_vel_cov_    = config.leg_feature_predict_vel_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_predict_vel_cov_ %f", __func__, leg_feature_predict_vel_cov_ );
-
 
   // Update the position of this leg feature
   updatePosition();
@@ -272,7 +261,7 @@ double LegFeature::getMeasurementProbability(tf::Stamped<tf::Point> loc){
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
 
 
-  double leg_feature_measurement_cov_ = 0.004;
+  double leg_feature_measurement_cov_ = 0.05;
 
   // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
@@ -282,6 +271,37 @@ double LegFeature::getMeasurementProbability(tf::Stamped<tf::Point> loc){
   cov(3, 3) = leg_feature_measurement_cov_;
 
   return filter_.getMeasProbability(loc,cov);
+}
+
+/***
+ * Get the current Deletion probability
+ * @param time current Time
+ * @return
+ */
+double LegFeature::getDeletionProbability(ros::Time time) const{
+
+
+
+  double timeSinceLastMeasSec = (time - this->meas_time_).toSec();
+
+  double timeDeletionProb;
+  if(getAssociationProbability() > 0.8){
+    timeDeletionProb = sigmoid(timeSinceLastMeasSec, 0.1, no_observation_timeout_s_);
+  }else{
+    timeDeletionProb = sigmoid(timeSinceLastMeasSec, 0.1, no_observation_timeout_s_);
+  }
+
+  double probNotAssociated = 1 - getAssociationProbability();
+
+
+
+  double deletionProb = std::min(timeDeletionProb, probNotAssociated);
+
+
+
+  std::cout << "Calculating deletion probability of leg" << int_id_ << "timeDeletionProb " << timeDeletionProb << " probNotAssociated" << probNotAssociated << std::endl;
+
+  return deletionProb;
 }
 
 // Update own position based on the Estimation of the Filter
@@ -373,4 +393,21 @@ void LegFeature::removeInvalidAssociations(){
 void LegFeature::addPeopleTracker(PeopleTrackerPtr peopleTracker){
   // Add this tracker to the list
   this->peopleTrackerList_.push_back(peopleTracker);
+}
+
+double LegFeature::getAssociationProbability() const{
+
+  double maxProbPeopleTracker = 0;
+
+  for(std::vector<PeopleTrackerPtr>::const_iterator peopleIt = this->peopleTrackerList_.begin(); peopleIt != this->peopleTrackerList_.end(); peopleIt++){
+
+    double peopleTrackerProb = (*peopleIt)->getTotalProbability();
+
+    if(peopleTrackerProb  > maxProbPeopleTracker ){
+      maxProbPeopleTracker = peopleTrackerProb;
+    }
+
+    return maxProbPeopleTracker;
+  }
+
 }

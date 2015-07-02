@@ -58,7 +58,8 @@ double OcclusionModel::getOcclusionProbability(tf::Stamped<tf::Point> point){
 
   }
 
-  return 0.0;
+  // This is returned if the particle is not within range
+  return 0.5;
 
 }
 

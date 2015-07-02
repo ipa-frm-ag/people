@@ -18,6 +18,7 @@
 #include <dual_people_leg_tracker/visualization/color_definitions.h>
 #include <dual_people_leg_tracker/people_tracker.h>
 #include <dual_people_leg_tracker/detection/detection.h>
+#include <dual_people_leg_tracker/math/math_functions.h>
 
 // People Stack
 #include <people_tracking_filter/state_pos_vel.h>
@@ -61,13 +62,18 @@ public:
 
   double leg_feature_update_cov_; /**< The measurement update covariance */
   double leg_feature_predict_pos_cov_; /**< The prediction position covariance */
+  double leg_feature_predict_pos_cov_init_; /**< The initialization position covariance */
   double leg_feature_predict_vel_cov_; /**< The prediction velocity covariance */
+  double leg_feature_predict_vel_cov_init_;/**< The initialization prediction covariance */
 
   bool is_valid_;
 
   bool is_static_; /**< Flag that is set the true after a certain motion has been observed */
 
   double reliability, p;
+
+  double no_observation_timeout_s_; /**< Timeout value */
+  double no_observation_timeout_asso_s_; /**< Timeout value */
 
   bool use_filter_; /**< Flag if the Filter should be used currently */
 
@@ -129,6 +135,10 @@ public:
     return !is_static_;
   }
 
+  int getId() const{
+    return this->int_id_;
+  }
+
   BFL::StatePosVel getEstimate(){
     return pos_vel_;
   }
@@ -173,6 +183,10 @@ public:
   void updateHistory();
 
   bool getLastStepWidth(double& width);
+
+  double getDeletionProbability(ros::Time) const;
+
+  double getAssociationProbability() const;
 
 private:
   void updatePosition();

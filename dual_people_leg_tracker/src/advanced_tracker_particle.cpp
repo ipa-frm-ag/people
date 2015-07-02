@@ -49,7 +49,12 @@ using namespace ros;
 
 namespace estimation
 {
-// constructor
+/**
+ *
+ * @param name
+ * @param num_particles
+ * @param sysnoise
+ */
 AdvancedTrackerParticle::AdvancedTrackerParticle(const string& name, unsigned int num_particles, const StatePosVel& sysnoise):
   Tracker(name),
   prior_(num_particles),
@@ -73,7 +78,7 @@ AdvancedTrackerParticle::~AdvancedTrackerParticle()
  * Initialize the Filter
  * @param mu The mean of the position
  * @param sigma The variance of the initialization
- * @param time The current time
+ * @param time The initialization
  */
 void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVel& sigma, const double time)
 {
@@ -106,7 +111,7 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
   filter_ = new PeopleParticleFilter(&prior_,
                                      &prior_,
                                      0,                     // resampleperiod
-                                     num_particles_ / 1.0,  // resamplethreshold (influence if it should be resampled) if this is unequal to 0 dynamic resampling will be used
+                                     num_particles_ / 4,  // resamplethreshold (influence if it should be resampled) if this is unequal to 0 dynamic resampling will be used
                                      0                      // resamplescheme
                                      );
   // TODO input own filter here

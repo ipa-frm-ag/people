@@ -67,6 +67,8 @@ add_library(dual_people_leg_tracker
             src/distributions/gaussian_pos_vel_mod.cpp
             src/leg_feature.cpp
             src/people_tracker.cpp
+            include/dual_people_leg_tracker/jpda/lap.cpp
+            src/models/SensorModel.cpp
             )
 
 catkin_package(INCLUDE_DIRS 
@@ -111,6 +113,11 @@ add_library(hungarian
 ## The leg detector
 add_executable(murty_demo
                   src/jpda/murty_demo.cpp 
+               )
+
+add_executable(lapjv_demo
+                  include/dual_people_leg_tracker/jpda/lapjv_demo.cpp
+                  include/dual_people_leg_tracker/jpda/lap.cpp
                )
 
 target_link_libraries(murty_demo hungarian)

@@ -10,6 +10,7 @@
 
 // Hungarian Solver
 #include <libs/libhungarian/hungarian.h>
+#include <libs/dlib/optimization/max_cost_assignment.h>
 
 //#define PSEUDO_INF
 #define INF 100000
@@ -105,6 +106,55 @@ Solution solvehungarian(Eigen::Matrix<int, -1, -1> problem){
 
     return solution;
 }
+
+/*
+Solution solvehungarianDlib(Eigen::Matrix<int, -1, -1> problem){
+
+    Solution solution;
+
+
+
+    // This prints optimal assignments:  [2, 0, 1] which indicates that we should assign
+    // the person from the first row of the cost matrix to job 2, the middle row person to
+    // job 0, and the bottom row person to job 1.
+    for (unsigned int i = 0; i < assignment.size(); i++)
+        cout << assignment[i] << std::endl;
+
+    // This prints optimal cost:  16.0
+    // which is correct since our optimal assignment is 6+5+5.
+    cout << "optimal cost: " << assignment_cost(cost, assignment) << endl;
+
+
+  // Turn eigenmatrix into a c matrix
+    int** m = eigenmatrix_to_cmatrix(problem,problem.rows(),problem.cols());
+
+
+
+    // To find out the best assignment of people to jobs we just need to call this function.
+    std::vector<long> assignment = dlib::max_cost_assignment(m);
+
+    unsigned int nRows = problem.rows();
+    unsigned int nCols = problem.cols();
+
+    // Solve Hungarian
+    hungarian_problem_t p;
+
+     initialize the gungarian_problem using the cost matrix
+    int matrix_size = hungarian_init(&p, m , nRows, nCols, HUNGARIAN_MODE_MINIMIZE_COST) ;
+
+     solve the assignement problem
+    hungarian_solve(&p);
+
+    solution.cost_total = p.cost_total;
+    solution.assignmentMatrix = cmatrix_to_eigenmatrix(p.assignment,nRows,nCols);
+
+     free used memory
+    hungarian_free(&p);
+    free(m);
+
+    return solution;
+}
+*/
 
 bool sortPairs (SolutionProblemPair i, SolutionProblemPair j) {
   // PARTITIONED ALWAYS BEFORE UNPARTITIONED

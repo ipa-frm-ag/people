@@ -107,11 +107,15 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
     }
 
     assert(this->_dynamicResampling == true); // TODO
-    //result = result && this->StaticResampleStep(); // TODO necessary?
 
-    result = result && this->DynamicResampleStep();
+    // This is needed!!! Since occlusion will not do a measurement update
+    result = result && this->Resample();
 
-    result = result && this->ProposalStepInternal(sysmodel,u,measmodel,z,s);
+    double highLevelPartition;
+
+    result = result && this->ProposalStepInternal(sysmodel,u,measmodel,z,s, highLevelPartition);
+
+
 
     //result = this->ParticleFilter<StatePosVel,tf::Vector3>::UpdateInternal(sysmodel,u,NULL,z,s) && result;
 
@@ -365,7 +369,7 @@ PeopleParticleFilter::getOcclusionProbability(OcclusionModelPtr occlusionModel)
 
     const StatePosVel& x_new = _ns_it->ValueGet();
 
-    Probability prop = occlusionModel->getOcclusionProbability(x_new.pos_);
+    Probability prop = occlusionModel->getOcclusionProbability(x_new.pos_) * _ns_it->WeightGet();
 
     probability_sum += prop;
 
@@ -403,8 +407,8 @@ PeopleParticleFilter::UpdateWeightsUsingOcclusionModel(OcclusionModelPtr occlusi
 
     weightfactor = occlusionmodel->getOcclusionProbability(point);
     // TODO apply occlusion model here
-    weightfactor = min(0.8, weightfactor);
-    weightfactor = 0.0;
+    //weightfactor = min(0.8, weightfactor);
+    //weightfactor = 0.0;
 
 
     if(weightfactor != 1.0){
@@ -421,7 +425,11 @@ PeopleParticleFilter::UpdateWeightsUsingOcclusionModel(OcclusionModelPtr occlusi
     counter++;
   }
 
-  return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
+  bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
+
+  result = result && this->Resample();
+
+  return result;
 }
 
 bool
@@ -457,9 +465,10 @@ PeopleParticleFilter::DynamicResampleStep()
   }
     if (resampling == true){
       std::cout << RED << "RESAMPLE! " << RESET << std::endl;
-      return this->LowVarianceResample();
+      //return this->LowVarianceResample();
+      return this->Resample();
     }
-      //return this->Resample();
+
     else
       return true;
 }
@@ -559,7 +568,8 @@ PeopleParticleFilter::ProposalStepInternal(SystemModel<StatePosVel> * const sysm
               const StatePosVel & u,
               MeasurementModel<tf::Vector3,StatePosVel> * const measmodel,
               const tf::Vector3 & z,
-              const StatePosVel & s)
+              const StatePosVel & s,
+              double partitionHighLevel)
 {
 
   // Set old samples to the posterior of the previous run
@@ -576,7 +586,7 @@ PeopleParticleFilter::ProposalStepInternal(SystemModel<StatePosVel> * const sysm
       const StatePosVel& x_old = _os_it->ValueGet();
 
       // Set the proposal as conditional argument
-      _proposal->ConditionalArgumentSet(0,x_old);
+      ((AdvancedSysPdfPosVel*) _proposal)->ConditionalArgumentSet(0,x_old);
 
       // Generate sample from the proposal
       _proposal->SampleFrom(_sample, DEFAULT,NULL);

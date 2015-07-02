@@ -19,6 +19,8 @@ using namespace BFL;
 class PeopleParticleFilter
   : public BFL::ParticleFilter<BFL::StatePosVel, tf::Vector3>
 {
+  public:
+    //AdvancedSysPdfPosVel *_proposal;
 
   public:
 
@@ -163,12 +165,23 @@ class PeopleParticleFilter
     LowVarianceResample();
 
 
+    /**
+     *
+     * @param sysmodel  The System Model (Advanced System Model)
+     * @param u
+     * @param measmodel
+     * @param z
+     * @param s
+     * @param partitionHighLevel Part to Sample From High Level
+     * @return
+     */
     bool
     ProposalStepInternal(SystemModel<StatePosVel> * const sysmodel,
                   const StatePosVel & u,
                   MeasurementModel<tf::Vector3,StatePosVel> * const measmodel,
                   const tf::Vector3 & z,
-                  const StatePosVel & s);
+                  const StatePosVel & s,
+                  double partitionHighLevel);
 };
 
 #endif /* PEOPLE_PEOPLE_TRACKING_FILTER_INCLUDE_PEOPLE_TRACKING_FILTER_PEOPLE_PARTICLE_FILTER_H_ */
