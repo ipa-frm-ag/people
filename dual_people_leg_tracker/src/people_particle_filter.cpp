@@ -36,13 +36,12 @@
 #include <dual_people_leg_tracker/visualization/color_definitions.h>
 #include <sample/weightedsample.h>
 
-
 #define StateVar SVar
 #define MeasVar MVar
 
 using namespace BFL;
 
-#define DEBUG_PARTICLES 0 // Set to 1 if you want to debug on particle level
+#define DEBUG_PARTICLES 1 // Set to 1 if you want to debug on particle level
 #define N_DEBUG_PARTICLES 10 // Number of particles to cout for debugging
 
 
@@ -101,18 +100,14 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
     // Proposal is the same as the SystemPdf
     this->ProposalSet(sysmodel->SystemPdfGet());
 
-
-
     // Check this before next
     assert(this->_proposal != NULL);
     assert(this->_post != NULL);
 
+    #if DEBUG_PARTICLES
     std::vector<WeightedSample<StatePosVel> > samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
 
-
-
-    #if DEBUG_PARTICLES
-    std::cout << "Samples before update" << std::endl;
+    std::cout << "Samples before prediction" << std::endl;
     for(int i = 0; i<N_DEBUG_PARTICLES; i++){
       std::cout << "Sample " << samples[i].ValueGet() << "Weight: " << samples[i].WeightGet() << std::endl;
     }
@@ -121,12 +116,27 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
     result = result && this->ProposalStepInternal(sysmodel,u,measmodel,z,s);
 
     #if DEBUG_PARTICLES
-    std::cout << "Samples after update" << std::endl;
+    #undef NDEBUG
+
+    std::cout << "Samples after prediction" << std::endl;
     samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
     for(int i = 0; i<N_DEBUG_PARTICLES; i++){
       std::cout << "Sample " << samples[i].ValueGet() << "Weight: " << samples[i].WeightGet() << std::endl;
+      std::cout << "Length Pos: " << samples[i].ValueGet().pos_.length() << std::endl;
+      std::cout << "Length Vel: " << samples[i].ValueGet().vel_.length() << std::endl;
+      bool condition_pos = isfinite(samples[i].ValueGet().pos_.length());
+      bool condition_vel = isfinite(samples[i].ValueGet().vel_.length());
+      std::cerr << "condition_pos " << condition_pos << std::endl;
+      std::cerr << "condition_vel " << condition_vel << std::endl;
+
+      if(!condition_pos || !condition_vel){
+        ROS_ISSUE_BREAK();
+      }
+
     }
     #endif
+
+    assert(false);
 
 
     ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s -> Internal Update done",__func__);
@@ -534,6 +544,16 @@ PeopleParticleFilter::ProposalStepInternal(SystemModel<StatePosVel> * const sysm
 
       // Generate sample from the proposal
       _proposal->SampleFrom(_sample, DEFAULT,NULL);
+
+      // DEBUG
+      if(!isfinite(_sample.ValueGet().pos_.length())){
+        std::cerr << "sample not finite: " << x_old << " - " << _sample.ValueGet() << std::endl;
+        ROS_ISSUE_BREAK();
+      }
+      if(!isfinite(_sample.ValueGet().vel_.length())){
+        std::cerr << "sample not finite: " << x_old << " - " << _sample.ValueGet() << std::endl;
+        ROS_ISSUE_BREAK();
+      }
 
       // Set the Value from the
       _ns_it->ValueSet(_sample.ValueGet());

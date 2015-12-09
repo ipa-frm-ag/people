@@ -44,7 +44,7 @@ using namespace tf;
 using namespace std;
 using namespace ros;
 
-#define DEBUG_ADVANCEDTRACKERPARTICLE 0
+#define DEBUG_ADVANCEDTRACKERPARTICLE 1
 #define DEBUG_ADVANCEDTRACKERPARTICLE_TIME 0
 
 
@@ -133,7 +133,7 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
 // Perform prediction using the motion model
 bool AdvancedTrackerParticle::updatePrediction(const double time)
 {
-  //ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
   //std::cout << "AdvancedTrackerParticle::updatePrediction" << std::endl;
 
@@ -141,6 +141,9 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
   benchmarking::Timer updatePredictionTimer; updatePredictionTimer.start();
 
   bool res = true;
+
+  std::cout << " time: " << time << " filter_time_" << filter_time_ << std::endl;
+
   if (time > filter_time_)
   {
     // set dt in sys model
@@ -148,9 +151,12 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
     filter_time_ = time;
 
     // update filter
+    ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--Calling Update on PeopleParticleFilter");
     res = filter_->Update(&sys_model_); // TODO!! // Call Update internal of the particle Filter
 
     if (!res) quality_ = 0;
+  }else{
+    ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--NOT Calling Update on PeopleParticleFilter");
   }
 
   return res;
@@ -163,7 +169,7 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
  */
 bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov)
 {
-  //ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
 
   // Set the covariances of the System Model
@@ -184,7 +190,7 @@ bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWr
  * @return
  */
 bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov, double gaitFactor, tf::Vector3 velVec, tf::Vector3 hipVec, double pplTrackerProbability){
-  //ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
 
   // Set the covariances of the System Model

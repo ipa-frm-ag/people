@@ -117,6 +117,13 @@ void LegFeature::preparePropagation(ros::Time time){
     // Get the estimation of the associated people tracker
     prepared_estimation_ = mostProbableAssociatedPPL->getEstimate();
 
+    // Get the hip vector
+    prepared_hip_vector_ = mostProbableAssociatedPPL->getHipVec();
+
+    if(!isfinite(prepared_hip_vector_.length())){
+      ROS_ISSUE_BREAK();
+    }
+
     // Get the current StepWidth
     double s = mostProbableAssociatedPPL->getStepWidth();
 

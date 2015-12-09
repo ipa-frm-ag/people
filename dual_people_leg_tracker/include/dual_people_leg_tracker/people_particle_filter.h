@@ -9,7 +9,7 @@
 // People Stack includes
 #include <filter/particlefilter.h>
 
-#define DEBUG_PEOPLE_PARTICLE_FILTER 0
+#define DEBUG_PEOPLE_PARTICLE_FILTER 1
 
 using namespace BFL;
 

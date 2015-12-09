@@ -133,13 +133,20 @@ void MultivariateGaussianPosVel::sigmaSet(const MatrixWrapper::SymmetricMatrix& 
 
 void MultivariateGaussianPosVel::eigenvectorsSet(tf::Vector3 eigv1, tf::Vector3 eigv2)
 {
+
+  if(!isfinite(eigv1.length()) || !isfinite(eigv2.length())){
+    std::cerr << "MultivariateGaussianPosVel::eigenvectorsSet" << std::endl;
+    std::cerr << "One or more of the eigenvectorsSet are not finite!" << std::endl;
+    ROS_ISSUE_BREAK();
+  }
+
   eigv1_(0) = eigv1.getX();
   eigv1_(1) = eigv1.getY();
   eigv1_(2) = eigv1.getZ();
 
   eigv2_(0) = eigv2.getX();
   eigv2_(1) = eigv2.getY();
-  eigv2_(2) = eigv1.getZ();
+  eigv2_(2) = eigv2.getZ();
 
 }
 
@@ -231,6 +238,18 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
                                   Vector3(sample_vel[0],
                                           sample_vel[1],
                                 		      0))); // TODO make this better
+
+  if(!isfinite(one_sample.ValueGet().pos_.length()) || !isfinite(one_sample.ValueGet().vel_.length())){
+    std::cerr << "sample is wrong: " << one_sample.ValueGet() << std::endl;
+    std::cerr << "vel_rand: " << vel_rand << std::endl;
+    std::cerr << "position_factor: " << position_factor << std::endl;
+    std::cerr << "velocity_factor: " << velocity_factor << std::endl;
+    std::cerr << "width_rand: " << width_rand << std::endl;
+    std::cerr << "dt: " << dt_ << std::endl;
+    std::cerr << "eigv1_: " << eigv1_ << std::endl;
+    std::cerr << "eigv2_: " << eigv2_ << std::endl;
+    ROS_ISSUE_BREAK();
+  }
 
   return true;
 }

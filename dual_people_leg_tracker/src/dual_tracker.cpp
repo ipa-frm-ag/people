@@ -624,14 +624,16 @@ public:
       (*legIt)->preparePropagation(scan->header.stamp); // Propagate <-> Predict the filters
     }
 
+
+    int nLegs = saved_leg_features.size();
     //for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin(); legIt != saved_leg_features.end(); legIt++)
 
 #pragma omp parallel
 {
     #pragma omp for
-      for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin(); legIt != saved_leg_features.end(); legIt++)
-      {
-      (*legIt)->getId(); // works
+    for(int i = 0; i < nLegs; ++i)
+    {
+      saved_leg_features[i]->getId(); // works
       //saved_leg_features[i]->propagate(scan->header.stamp); // Propagate <-> Predict the filters
 
       //printf("Propagation of loop %i",i);
@@ -650,6 +652,19 @@ public:
     }
 
 
+    // DEBUG
+    for (vector<LegFeaturePtr>::iterator legIt = propagated.begin(); legIt != propagated.end(); legIt++)
+    {
+
+      double length = (*legIt)->getEstimate().pos_.length();
+      if(length > 10000){
+        std::cout << (*legIt) <<"Length: " << length << std::endl;
+        ROS_ASSERT(false);
+      }
+
+    }
+
+
 
 
     propagationLegTrackerTimer.stop();
@@ -657,7 +672,7 @@ public:
     propagationTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Propagated %i SavedFeatures",__func__, (int) propagated.size());
 
-    publishParticlesPrediction(propagated, scan->header.stamp);
+    //publishParticlesPrediction(propagated, scan->header.stamp);
     //publishParticlesPredArrows(propagated, scan->header.stamp);
 
     ROS_DEBUG("%sPrediction done! [Cycle %u] - %f ms (%f People, %f Legs)", BOLDWHITE, cycle_, propagationTimer.getElapsedTimeMs(), propagationPeopleTrackerTimer.getElapsedTimeMs(), propagationLegTrackerTimer.getElapsedTimeMs());
@@ -738,6 +753,9 @@ public:
     int nMeasurementsFake = 0;
 
     if(use_fake_measurements_){
+
+      std::cout << "Creating fake measurements" << std::endl;
+
       boost::shared_ptr<std::vector<PeopleTrackerPtr> > ppls = people_trackers_.getList();
 
       // Iterate the people tracker
@@ -802,6 +820,8 @@ public:
     int row = 0;
     for (vector<LegFeaturePtr>::iterator legIt = propagated.begin(); legIt != propagated.end(); legIt++)
     {
+
+      std::cout << *legIt << std::endl;
 
       // Iterate the detections
       int col = 0;

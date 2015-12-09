@@ -151,6 +151,9 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
 
   }
 
+  ROS_ASSERT(res.pos_.length() < 10000);
+  ROS_ASSERT(res.vel_.length() < 10000);
+
   return true;
 }
 
